@@ -34,6 +34,37 @@ class TeilnehmerServiceTests {
     }
 
     @Test
+    void liefertEinsAlsNaechsteNrWennNochKeineTeilnehmerVorhandenSind() {
+        RepositoryAufruf aufruf = new RepositoryAufruf();
+        TeilnehmerRepository teilnehmerRepository = repositoryProxy(TeilnehmerRepository.class, aufruf);
+        TeilnehmerService teilnehmerService = new TeilnehmerService(
+                teilnehmerRepository,
+                new FakeEinwahlEntdeckerangebotService(),
+                new FakeEinwahlAGService(),
+                new FakeEinwahlVormittagsAGService()
+        );
+
+        assertEquals(1, teilnehmerService.naechsteNr());
+    }
+
+    @Test
+    void ermitteltNaechsteNrAusVorhandenenTeilnehmern() {
+        RepositoryAufruf aufruf = new RepositoryAufruf(List.of(
+                teilnehmer(1, "Max", "Muster"),
+                teilnehmer(3, "Erika", "Muster")
+        ));
+        TeilnehmerRepository teilnehmerRepository = repositoryProxy(TeilnehmerRepository.class, aufruf);
+        TeilnehmerService teilnehmerService = new TeilnehmerService(
+                teilnehmerRepository,
+                new FakeEinwahlEntdeckerangebotService(),
+                new FakeEinwahlAGService(),
+                new FakeEinwahlVormittagsAGService()
+        );
+
+        assertEquals(4, teilnehmerService.naechsteNr());
+    }
+
+    @Test
     void speichertMehrereTeilnehmerAufEinmal() {
         RepositoryAufruf aufruf = new RepositoryAufruf();
         TeilnehmerRepository teilnehmerRepository = repositoryProxy(TeilnehmerRepository.class, aufruf);
@@ -91,7 +122,7 @@ class TeilnehmerServiceTests {
                         return Optional.empty();
                     }
                     if (Iterable.class.isAssignableFrom(method.getReturnType())) {
-                        return args == null || args.length == 0 ? List.of() : args[0];
+                        return args == null || args.length == 0 ? aufruf.vorhandeneTeilnehmer : args[0];
                     }
                     if (method.getReturnType().equals(Void.TYPE)) {
                         return null;
@@ -108,6 +139,14 @@ class TeilnehmerServiceTests {
     private static class RepositoryAufruf {
         private String methodenname;
         private List<Object> argumente;
+        private List<Teilnehmer> vorhandeneTeilnehmer = List.of();
+
+        private RepositoryAufruf() {
+        }
+
+        private RepositoryAufruf(List<Teilnehmer> vorhandeneTeilnehmer) {
+            this.vorhandeneTeilnehmer = vorhandeneTeilnehmer;
+        }
     }
 
     private static class FakeEinwahlEntdeckerangebotService extends EinwahlEntdeckerangebotService {

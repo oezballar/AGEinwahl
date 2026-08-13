@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einwahl</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link" th:href="@{/ags}">AGs</a>
+        <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1 th:text="'Einwahl: ' + ${teilnehmer.vorname()} + ' ' + ${teilnehmer.name()}">Einwahl</h1>
+            <p th:text="'Klasse ' + ${teilnehmer.klasse()}">Klasse 1a</p>
+        </div>
+    </section>
+
+    <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
+
+    <form method="post" th:action="@{/teilnehmer/{nr}/einwahl(nr=${teilnehmer.nr()})}">
+        <section class="selection-layout">
+            <section class="selection-panel" th:each="tag : ${einwahlTage}">
+                <h2 th:text="${tag.wochentag()}">MONTAG</h2>
+                <div class="selection-time-group" th:each="zeitgruppe : ${tag.zeitgruppen()}">
+                    <h3 th:text="${zeitgruppe.zeit()}">NACHMITTAG</h3>
+                    <div class="selection-list">
+                        <label class="selection-item" th:each="option : ${zeitgruppe.optionen()}">
+                            <span>
+                                <strong th:text="${option.ag().titel()}">AG Titel</strong>
+                            </span>
+                            <select class="compact-select"
+                                    th:if="${option.jaNeinAuswahl()}"
+                                    th:classappend="${#strings.isEmpty(option.auswahl())} ? ' open-selection'"
+                                    th:name="${option.feldname()}">
+                                <option value="" th:selected="${#strings.isEmpty(option.auswahl())}">Offen</option>
+                                <option th:each="auswahl : ${auswahlWerte}"
+                                        th:value="${auswahl}"
+                                        th:text="${auswahl}"
+                                        th:selected="${auswahl.name() == option.auswahl()}">JA</option>
+                            </select>
+                            <input class="compact-input"
+                                   th:if="${option.prioritaetsAuswahl()}"
+                                   type="number"
+                                   min="1"
+                                   placeholder="Offen"
+                                   th:classappend="${#strings.isEmpty(option.auswahl())} ? ' open-selection'"
+                                   th:name="${option.feldname()}"
+                                   th:value="${option.auswahl()}">
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="table-section" th:if="${#lists.isEmpty(einwahlTage)}">
+                <p class="empty">Fuer diesen Teilnehmer sind keine Einwahloptionen vorhanden.</p>
+            </section>
+        </section>
+
+        <div class="form-actions sticky-actions">
+            <a class="button secondary" th:href="@{/teilnehmer}">Abbrechen</a>
+            <button class="button primary" type="submit">Einwahl speichern</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

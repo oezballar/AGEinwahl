@@ -3,7 +3,7 @@ package com.ozballar.ageinwahl.domain;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
-@Table("teilnehmer")
+@Table("TEILNEHMER")
 public record Teilnehmer(
         @Id
         Integer nr,

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.ozballar.ageinwahl.domain.Ag;
 import com.ozballar.ageinwahl.domain.EinwahlAG;
+import com.ozballar.ageinwahl.domain.ErlaubterJahrgang;
 import com.ozballar.ageinwahl.domain.Teilnehmer;
 import com.ozballar.ageinwahl.repository.AgRepository;
 import com.ozballar.ageinwahl.repository.EinwahlAGRepository;
@@ -34,9 +35,9 @@ class EinwahlAGServiceTests {
         service.erstelleEintraegeFuerTeilnehmer(teilnehmer);
 
         assertEquals(2, gespeicherteEinwahlen.size());
-        assertEquals(passendeAg, gespeicherteEinwahlen.get(0).ag());
+        assertEquals(passendeAg.titel(), gespeicherteEinwahlen.get(0).agTitel());
         assertEquals(null, gespeicherteEinwahlen.get(0).auswahl());
-        assertEquals(jahresAg, gespeicherteEinwahlen.get(1).ag());
+        assertEquals(jahresAg.titel(), gespeicherteEinwahlen.get(1).agTitel());
         assertEquals(null, gespeicherteEinwahlen.get(1).auswahl());
     }
 
@@ -55,8 +56,8 @@ class EinwahlAGServiceTests {
         service.erstelleEintraegeFuerAg(ag);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(passenderTeilnehmer, gespeicherteEinwahlen.get(0).teilnehmer());
-        assertEquals(ag, gespeicherteEinwahlen.get(0).ag());
+        assertEquals(passenderTeilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(ag.titel(), gespeicherteEinwahlen.get(0).agTitel());
     }
 
     @Test
@@ -129,7 +130,9 @@ class EinwahlAGServiceTests {
                 "Verantwortlicher",
                 "Ort",
                 10,
-                erlaubteJahrgaenge
+                erlaubteJahrgaenge.stream()
+                        .map(ErlaubterJahrgang::new)
+                        .toList()
         );
     }
 }

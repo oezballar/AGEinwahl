@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import com.ozballar.ageinwahl.domain.Ag;
+import com.ozballar.ageinwahl.domain.ErlaubterJahrgang;
 import com.ozballar.ageinwahl.repository.AgRepository;
 
 class AgServiceTests {
@@ -108,7 +109,7 @@ class AgServiceTests {
                 "Verantwortlicher",
                 "Ort",
                 10,
-                List.of(1, 2)
+                List.of(new ErlaubterJahrgang(1), new ErlaubterJahrgang(2))
         );
     }
 

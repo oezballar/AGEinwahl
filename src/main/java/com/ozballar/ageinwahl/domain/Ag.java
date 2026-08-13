@@ -6,7 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
-@Table("ag")
+@Table("AG")
 public record Ag(
         @Id
         Integer id,
@@ -17,16 +17,27 @@ public record Ag(
         String verantwortlicher,
         String ort,
         Integer maximaleTeilnehmerzahl,
-        @MappedCollection(idColumn = "ag_id")
-        List<Integer> erlaubteJahrgaenge
+        @MappedCollection(idColumn = "AG_ID", keyColumn = "POSITION")
+        List<ErlaubterJahrgang> erlaubteJahrgaenge
 ) {
 
     public Ag {
-        if (erlaubteJahrgaenge != null && erlaubteJahrgaenge.stream().anyMatch(jahrgang -> jahrgang == null || jahrgang < 1 || jahrgang > 4)) {
-            throw new IllegalArgumentException("Erlaubte Jahrgaenge muessen zwischen 1 und 4 liegen.");
+        if (erlaubteJahrgaenge != null && erlaubteJahrgaenge.stream().anyMatch(jahrgang -> jahrgang == null || jahrgang.jahrgang() == null)) {
+            throw new IllegalArgumentException("Erlaubte Jahrgaenge duerfen keine leeren Eintraege enthalten.");
         }
 
-        erlaubteJahrgaenge = erlaubteJahrgaenge == null ? null : List.copyOf(erlaubteJahrgaenge);
+        erlaubteJahrgaenge = erlaubteJahrgaenge == null ? List.of() : List.copyOf(erlaubteJahrgaenge);
+    }
+
+    public boolean istFuerJahrgangErlaubt(int jahrgang) {
+        return erlaubteJahrgaenge.stream()
+                .anyMatch(erlaubterJahrgang -> erlaubterJahrgang.jahrgang() == jahrgang);
+    }
+
+    public List<Integer> erlaubteJahrgangszahlen() {
+        return erlaubteJahrgaenge.stream()
+                .map(ErlaubterJahrgang::jahrgang)
+                .toList();
     }
 
     public enum Wochentag {

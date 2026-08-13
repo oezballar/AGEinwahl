@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teilnehmer</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link" th:href="@{/ags}">AGs</a>
+        <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1>Teilnehmer</h1>
+            <p>Schueler verwalten und als Grundlage fuer Einwahlen verwenden.</p>
+        </div>
+        <a class="button primary" th:href="@{/teilnehmer/neu}">Neuer Teilnehmer</a>
+    </section>
+
+    <section class="matrix-stack" th:if="${!#lists.isEmpty(tabellen)}">
+        <section class="matrix-panel" th:each="tabelle : ${tabellen}">
+            <div class="matrix-heading">
+                <h2 th:text="'Klasse ' + ${tabelle.klasse()}">Klasse 1a</h2>
+                <span class="muted" th:text="${#lists.size(tabelle.teilnehmer())} + ' Teilnehmer'">12 Teilnehmer</span>
+            </div>
+
+            <div class="table-section">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Nr</th>
+                        <th>Vorname</th>
+                        <th>Name</th>
+                        <th class="actions">Aktionen</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="eintrag : ${tabelle.teilnehmer()}">
+                        <td th:text="${eintrag.teilnehmer().nr()}">1</td>
+                        <td th:text="${eintrag.teilnehmer().vorname()}">Max</td>
+                        <td th:text="${eintrag.teilnehmer().name()}">Muster</td>
+                        <td class="actions">
+                            <a class="button"
+                               th:classappend="${eintrag.einwahlVollstaendig()} ? ' success' : ' warning'"
+                               th:href="@{/teilnehmer/{nr}/einwahl(nr=${eintrag.teilnehmer().nr()})}">
+                                Einwahl
+                            </a>
+                            <a class="button secondary" th:href="@{/teilnehmer/{nr}/bearbeiten(nr=${eintrag.teilnehmer().nr()})}">Bearbeiten</a>
+                            <form method="post" th:action="@{/teilnehmer/{nr}/loeschen(nr=${eintrag.teilnehmer().nr()})}">
+                                <button class="button danger" type="submit">Loeschen</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <section class="table-section" th:if="${#lists.isEmpty(tabellen)}">
+        <p class="empty">Keine Teilnehmer vorhanden.</p>
+    </section>
+</main>
+</body>
+</html>

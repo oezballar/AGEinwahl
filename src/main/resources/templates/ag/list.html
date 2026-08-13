@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGs</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link active" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1>AGs</h1>
+            <p>Angebote, Zeiten, Kategorien und erlaubte Jahrgaenge verwalten.</p>
+        </div>
+        <a class="button primary" th:href="@{/ags/neu}">Neue AG</a>
+    </section>
+
+    <section class="matrix-stack" th:if="${!#lists.isEmpty(tabellen)}">
+        <section class="matrix-panel" th:each="tabelle : ${tabellen}">
+            <div class="matrix-heading">
+                <h2 th:text="${tabelle.wochentag()}">MONTAG</h2>
+            </div>
+
+            <div class="table-section">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Titel</th>
+                        <th>Kategorie</th>
+                        <th>Zeit</th>
+                        <th>Jahrgaenge</th>
+                        <th>Max.</th>
+                        <th>Verantwortlicher</th>
+                        <th>Ort</th>
+                        <th class="actions">Aktionen</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="ag : ${tabelle.ags()}">
+                        <td th:text="${ag.titel()}">Sport</td>
+                        <td th:text="${ag.kategorie()}">AG</td>
+                        <td th:text="${ag.zeit()}">NACHMITTAG</td>
+                        <td th:text="${ag.erlaubteJahrgangszahlen()}">[1, 2]</td>
+                        <td th:text="${ag.maximaleTeilnehmerzahl()}">10</td>
+                        <td th:text="${ag.verantwortlicher()}">Frau Beispiel</td>
+                        <td th:text="${ag.ort()}">Turnhalle</td>
+                        <td class="actions">
+                            <a class="button secondary" th:href="@{/ags/{id}/bearbeiten(id=${ag.id()})}">Bearbeiten</a>
+                            <form method="post" th:action="@{/ags/{id}/loeschen(id=${ag.id()})}">
+                                <button class="button danger" type="submit">Loeschen</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+
+    <section class="table-section" th:if="${#lists.isEmpty(tabellen)}">
+        <p class="empty">Keine AGs vorhanden.</p>
+    </section>
+</main>
+</body>
+</html>

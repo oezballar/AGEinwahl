@@ -1,6 +1,7 @@
 package com.ozballar.ageinwahl.service;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import org.springframework.stereotype.Service;
@@ -37,6 +38,26 @@ public class EinwahlAGService {
         teilnehmerRepository.findAll().forEach(teilnehmer -> erstelleEintragWennGueltigUndNochNichtVorhanden(teilnehmer, ag));
     }
 
+    public Iterable<EinwahlAG> findeAlle() {
+        return einwahlAGRepository.findAll();
+    }
+
+    public Optional<EinwahlAG> findeNachId(Integer id) {
+        return einwahlAGRepository.findById(id);
+    }
+
+    public EinwahlAG speichereAuswahl(Integer id, Integer auswahl) {
+        EinwahlAG einwahl = findeNachId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Einwahl wurde nicht gefunden."));
+
+        return einwahlAGRepository.save(new EinwahlAG(
+                einwahl.id(),
+                einwahl.teilnehmerNr(),
+                einwahl.agTitel(),
+                auswahl
+        ));
+    }
+
     private void erstelleEintragWennGueltigUndNochNichtVorhanden(Teilnehmer teilnehmer, Ag ag) {
         if (!EinwahlAG.istGueltigeAuswahl(teilnehmer, ag) || istBereitsVorhanden(teilnehmer, ag)) {
             return;
@@ -47,6 +68,6 @@ public class EinwahlAGService {
 
     private boolean istBereitsVorhanden(Teilnehmer teilnehmer, Ag ag) {
         return StreamSupport.stream(einwahlAGRepository.findAll().spliterator(), false)
-                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmer().nr(), teilnehmer.nr()) && Objects.equals(einwahl.ag().titel(), ag.titel()));
+                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerNr(), teilnehmer.nr()) && Objects.equals(einwahl.agTitel(), ag.titel()));
     }
 }

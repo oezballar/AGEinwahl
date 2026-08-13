@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.ozballar.ageinwahl.domain.Ag;
 import com.ozballar.ageinwahl.domain.EinwahlEntdeckerangebot;
+import com.ozballar.ageinwahl.domain.ErlaubterJahrgang;
 import com.ozballar.ageinwahl.domain.Teilnehmer;
 import com.ozballar.ageinwahl.repository.AgRepository;
 import com.ozballar.ageinwahl.repository.EinwahlEntdeckerangebotRepository;
@@ -33,8 +34,8 @@ class EinwahlEntdeckerangebotServiceTests {
         service.erstelleEintraegeFuerTeilnehmer(teilnehmer);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(teilnehmer, gespeicherteEinwahlen.get(0).teilnehmer());
-        assertEquals(passendesEntdeckerangebot, gespeicherteEinwahlen.get(0).ag());
+        assertEquals(teilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(passendesEntdeckerangebot.titel(), gespeicherteEinwahlen.get(0).agTitel());
         assertEquals(null, gespeicherteEinwahlen.get(0).auswahl());
     }
 
@@ -53,8 +54,8 @@ class EinwahlEntdeckerangebotServiceTests {
         service.erstelleEintraegeFuerAg(entdeckerangebot);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(passenderTeilnehmer, gespeicherteEinwahlen.get(0).teilnehmer());
-        assertEquals(entdeckerangebot, gespeicherteEinwahlen.get(0).ag());
+        assertEquals(passenderTeilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(entdeckerangebot.titel(), gespeicherteEinwahlen.get(0).agTitel());
     }
 
     @Test
@@ -127,7 +128,9 @@ class EinwahlEntdeckerangebotServiceTests {
                 "Verantwortlicher",
                 "Ort",
                 10,
-                erlaubteJahrgaenge
+                erlaubteJahrgaenge.stream()
+                        .map(ErlaubterJahrgang::new)
+                        .toList()
         );
     }
 }

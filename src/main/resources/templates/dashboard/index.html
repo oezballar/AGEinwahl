@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Übersicht</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link active" th:href="@{/}">Übersicht</a>
+        <a class="nav-link" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1>Übersicht</h1>
+            <p>Aktueller Stand der AG-Einwahl.</p>
+        </div>
+    </section>
+
+    <section class="metric-grid">
+        <article class="metric">
+            <span>Teilnehmer</span>
+            <strong th:text="${anzahlTeilnehmer}">0</strong>
+        </article>
+        <article class="metric">
+            <span>AGs</span>
+            <strong th:text="${anzahlAgs}">0</strong>
+        </article>
+        <article class="metric warning">
+            <span>Offene Felder</span>
+            <strong th:text="${offeneFelder}">0</strong>
+        </article>
+        <article class="metric">
+            <span>Auswahlen</span>
+            <strong th:text="${abgegebeneAuswahlen}">0</strong>
+        </article>
+        <article class="metric danger" th:classappend="${ueberbelegteAgs == 0} ? ' quiet'">
+            <span>Überbelegte AGs</span>
+            <strong th:text="${ueberbelegteAgs}">0</strong>
+        </article>
+        <article class="metric warning" th:classappend="${offeneNachmittagsZuweisungen == 0} ? ' quiet'">
+            <span>Offene Nachmittage</span>
+            <strong th:text="${offeneNachmittagsZuweisungen}">0</strong>
+        </article>
+        <article class="metric">
+            <span>Freie Plätze</span>
+            <strong th:text="${freiePlaetze}">0</strong>
+        </article>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="matrix-heading">
+            <h2>Belegung der AGs</h2>
+        </div>
+
+        <div class="occupancy-list" th:if="${!#lists.isEmpty(belegungen)}">
+            <article class="occupancy-row" th:each="belegung : ${belegungen}"
+                     th:classappend="${belegung.ueberbelegt()} ? ' overbooked'">
+                <div class="occupancy-label">
+                    <strong th:text="${belegung.titel()}">AG Titel</strong>
+                    <span th:text="${belegung.wochentag()} + ' · ' + ${belegung.zeit()} + ' · ' + ${belegung.kategorie()}">DIENSTAG · NACHMITTAG · AG</span>
+                </div>
+                <div class="occupancy-track" aria-hidden="true">
+                    <div class="occupancy-bar" th:style="'width: ' + ${belegung.balkenBreite()} + '%'"></div>
+                </div>
+                <div class="occupancy-value">
+                    <strong th:text="${belegung.belegt()} + ' / ' + ${belegung.maximaleTeilnehmerzahl()}">0 / 0</strong>
+                    <span th:text="${belegung.prozent()} + '%'">0%</span>
+                </div>
+            </article>
+        </div>
+
+        <p class="empty" th:if="${#lists.isEmpty(belegungen)}">Es sind noch keine AGs angelegt.</p>
+    </section>
+</main>
+</body>
+</html>

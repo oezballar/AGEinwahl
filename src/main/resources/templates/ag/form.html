@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${titel}">AG</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link active" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+    </nav>
+</aside>
+
+<main class="page narrow">
+    <section class="page-heading">
+        <div>
+            <h1 th:text="${titel}">AG bearbeiten</h1>
+            <p>Titel muessen eindeutig sein.</p>
+        </div>
+    </section>
+
+    <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
+
+    <form class="form" method="post" th:action="@{/ags}" th:object="${agForm}">
+        <input type="hidden" th:field="*{id}">
+
+        <label>
+            <span>Titel</span>
+            <input type="text" required th:field="*{titel}">
+        </label>
+
+        <label>
+            <span>Kategorie</span>
+            <select required th:field="*{kategorie}">
+                <option value="">Auswaehlen</option>
+                <option th:each="kategorie : ${kategorien}" th:value="${kategorie}" th:text="${kategorie}">AG</option>
+            </select>
+        </label>
+
+        <label>
+            <span>Zeit</span>
+            <select required th:field="*{zeit}">
+                <option value="">Auswaehlen</option>
+                <option th:each="zeit : ${zeiten}" th:value="${zeit}" th:text="${zeit}">NACHMITTAG</option>
+            </select>
+        </label>
+
+        <label>
+            <span>Wochentag</span>
+            <select required th:field="*{wochentag}">
+                <option value="">Auswaehlen</option>
+                <option th:each="wochentag : ${wochentage}" th:value="${wochentag}" th:text="${wochentag}">MONTAG</option>
+            </select>
+        </label>
+
+        <label>
+            <span>Verantwortlicher</span>
+            <input type="text" th:field="*{verantwortlicher}">
+        </label>
+
+        <label>
+            <span>Ort</span>
+            <input type="text" th:field="*{ort}">
+        </label>
+
+        <label>
+            <span>Maximale Teilnehmerzahl</span>
+            <input type="number" min="1" th:field="*{maximaleTeilnehmerzahl}">
+        </label>
+
+        <fieldset>
+            <legend>Erlaubte Jahrgaenge</legend>
+            <label class="check" th:each="jahrgang : ${jahrgaenge}">
+                <input type="checkbox" th:field="*{erlaubteJahrgaenge}" th:value="${jahrgang}">
+                <span th:text="${jahrgang}">1</span>
+            </label>
+        </fieldset>
+
+        <div class="form-actions">
+            <a class="button secondary" th:href="@{/ags}">Abbrechen</a>
+            <button class="button primary" type="submit">Speichern</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

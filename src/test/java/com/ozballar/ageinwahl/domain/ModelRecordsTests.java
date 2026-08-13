@@ -136,7 +136,7 @@ class ModelRecordsTests {
         Ag jahresAg = ag(Ag.Kategorie.JAHRES_AG, Ag.Zeit.VORMITTAG, List.of(3));
 
         assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, ag, null));
-        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, jahresAg, 1));
+        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, jahresAg, EinwahlVormittagsAG.Auswahl.JA));
     }
 
     @Test
@@ -152,11 +152,12 @@ class ModelRecordsTests {
     }
 
     @Test
-    void einwahlVormittagsAgLehntAuswahlKleinerEinsAb() {
+    void einwahlVormittagsAgErlaubtJaUndNeinAlsAuswahl() {
         Teilnehmer teilnehmer = teilnehmer("2a");
         Ag ag = ag("Sport", Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(2));
 
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlVormittagsAG(null, teilnehmer, ag, 0));
+        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, ag, EinwahlVormittagsAG.Auswahl.JA));
+        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, ag, EinwahlVormittagsAG.Auswahl.NEIN));
     }
 
     private static Teilnehmer teilnehmer(String klasse) {
@@ -177,7 +178,9 @@ class ModelRecordsTests {
                 "Verantwortlicher",
                 "Ort",
                 10,
-                erlaubteJahrgaenge
+                erlaubteJahrgaenge == null ? null : erlaubteJahrgaenge.stream()
+                        .map(ErlaubterJahrgang::new)
+                        .toList()
         );
     }
 
