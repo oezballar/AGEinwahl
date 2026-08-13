@@ -1,6 +1,11 @@
 package com.ozballar.ageinwahl.domain;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+
+@Table("teilnehmer")
 public record Teilnehmer(
+        @Id
         Integer nr,
         String vorname,
         String name,

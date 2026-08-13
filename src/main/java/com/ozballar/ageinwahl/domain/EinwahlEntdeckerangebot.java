@@ -1,15 +1,18 @@
 package com.ozballar.ageinwahl.domain;
 
-import java.util.HashMap;
-
+import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Embedded;
-import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 
+@Table("einwahl_entdeckerangebot")
 public record EinwahlEntdeckerangebot(
+        @Id
+        Integer id,
         @Embedded(onEmpty = Embedded.OnEmpty.USE_NULL, prefix = "teilnehmer_")
         Teilnehmer teilnehmer,
-        @MappedCollection(idColumn = "einwahl_entdeckerangebot_id", keyColumn = "ag")
-        HashMap<Ag, Auswahl> auswahl
+        @Embedded(onEmpty = Embedded.OnEmpty.USE_NULL, prefix = "ag_")
+        Ag ag,
+        Auswahl auswahl
 ) {
 
     public EinwahlEntdeckerangebot {
@@ -21,18 +24,19 @@ public record EinwahlEntdeckerangebot(
             throw new IllegalArgumentException("Teilnehmerklasse darf nicht null sein.");
         }
 
-        if (auswahl != null && auswahl.keySet().stream().anyMatch(ag -> !istErlaubtesEntdeckerangebot(ag, teilnehmer))) {
-            throw new IllegalArgumentException("Auswahl darf nur Entdeckerangebote enthalten, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
+        if (!istErlaubteAuswahl(teilnehmer, ag)) {
+            throw new IllegalArgumentException("EinwahlEntdeckerangebot darf nur fuer Entdeckerangebote erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
-
-        auswahl = auswahl == null ? new HashMap<>() : new HashMap<>(auswahl);
     }
 
-    private static boolean istErlaubtesEntdeckerangebot(Ag ag, Teilnehmer teilnehmer) {
+    public static boolean istErlaubteAuswahl(Teilnehmer teilnehmer, Ag ag) {
+        if (teilnehmer == null || teilnehmer.klasse() == null || ag == null) {
+            return false;
+        }
+
         int jahrgang = Character.getNumericValue(teilnehmer.klasse().charAt(0));
 
-        return ag != null
-                && ag.kategorie() == Ag.Kategorie.ENTDECKERANGEBOT
+        return ag.kategorie() == Ag.Kategorie.ENTDECKERANGEBOT
                 && ag.erlaubteJahrgaenge() != null
                 && ag.erlaubteJahrgaenge().contains(jahrgang);
     }

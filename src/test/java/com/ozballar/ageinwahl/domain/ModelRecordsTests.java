@@ -3,9 +3,7 @@ package com.ozballar.ageinwahl.domain;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,8 +41,10 @@ class ModelRecordsTests {
         Ag erlaubtesEntdeckerangebot = ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.VORMITTAG, List.of(2));
 
         assertDoesNotThrow(() -> new EinwahlEntdeckerangebot(
+                null,
                 teilnehmer,
-                new HashMap<>(Map.of(erlaubtesEntdeckerangebot, EinwahlEntdeckerangebot.Auswahl.JA))
+                erlaubtesEntdeckerangebot,
+                null
         ));
     }
 
@@ -55,12 +55,16 @@ class ModelRecordsTests {
         Ag falscherJahrgang = ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.VORMITTAG, List.of(1));
 
         assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebot(
+                null,
                 teilnehmer,
-                new HashMap<>(Map.of(falscheKategorie, EinwahlEntdeckerangebot.Auswahl.JA))
+                falscheKategorie,
+                null
         ));
         assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebot(
+                null,
                 teilnehmer,
-                new HashMap<>(Map.of(falscherJahrgang, EinwahlEntdeckerangebot.Auswahl.JA))
+                falscherJahrgang,
+                null
         ));
     }
 
@@ -70,11 +74,15 @@ class ModelRecordsTests {
 
         assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebot(
                 null,
-                new HashMap<>(Map.of(entdeckerangebot, EinwahlEntdeckerangebot.Auswahl.JA))
+                null,
+                entdeckerangebot,
+                null
         ));
         assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebot(
+                null,
                 teilnehmer(null),
-                new HashMap<>(Map.of(entdeckerangebot, EinwahlEntdeckerangebot.Auswahl.JA))
+                entdeckerangebot,
+                null
         ));
     }
 
@@ -84,54 +92,71 @@ class ModelRecordsTests {
         Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(3));
         Ag jahresAg = ag(Ag.Kategorie.JAHRES_AG, Ag.Zeit.NACHMITTAG, List.of(3));
 
-        assertDoesNotThrow(() -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, ag))));
-        assertDoesNotThrow(() -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(2, jahresAg))));
+        assertDoesNotThrow(() -> new EinwahlAG(null, teilnehmer, ag, null));
+        assertDoesNotThrow(() -> new EinwahlAG(null, teilnehmer, jahresAg, 1));
     }
 
     @Test
     void einwahlAgLehntUngueltigeSchluesselKategorieZeitOderJahrgangAb() {
         Teilnehmer teilnehmer = teilnehmer("3a");
-        Ag erlaubteAg = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(3));
         Ag entdeckerangebot = ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.NACHMITTAG, List.of(3));
         Ag vormittagsAg = ag(Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(3));
         Ag falscherJahrgang = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
 
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(0, erlaubteAg))));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, entdeckerangebot))));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, vormittagsAg))));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, falscherJahrgang))));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, teilnehmer, entdeckerangebot, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, teilnehmer, vormittagsAg, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, teilnehmer, falscherJahrgang, null));
     }
 
     @Test
     void einwahlAgBenoetigtTeilnehmerMitKlasse() {
         Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(3));
 
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, new HashMap<>(Map.of(1, ag))));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer(null), new HashMap<>(Map.of(1, ag))));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, null, ag, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, teilnehmer(null), ag, null));
     }
 
     @Test
-    void aggregateBenoetigenRootObjekt() {
+    void einwahlAgLehntAuswahlKleinerEinsAb() {
         Teilnehmer teilnehmer = teilnehmer("2a");
-        Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
-        EinwahlAG einwahlAG = new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, ag)));
-        EinwahlEntdeckerangebot einwahlEntdeckerangebot = new EinwahlEntdeckerangebot(
+        Ag ersteAg = ag("Sport", Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
+
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(
+                null,
                 teilnehmer,
-                new HashMap<>(Map.of(
-                        ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.VORMITTAG, List.of(2)),
-                        EinwahlEntdeckerangebot.Auswahl.JA
-                ))
-        );
+                ersteAg,
+                0
+        ));
+    }
 
-        assertDoesNotThrow(() -> new TeilnehmerAggregat(1, teilnehmer));
-        assertDoesNotThrow(() -> new AgAggregat(1, ag));
-        assertDoesNotThrow(() -> new EinwahlAGAggregat(1, einwahlAG));
-        assertDoesNotThrow(() -> new EinwahlEntdeckerangebotAggregat(1, einwahlEntdeckerangebot));
+    @Test
+    void einwahlVormittagsAgErlaubtAgUndJahresAgAmVormittagMitPassendemJahrgang() {
+        Teilnehmer teilnehmer = teilnehmer("3a");
+        Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(3));
+        Ag jahresAg = ag(Ag.Kategorie.JAHRES_AG, Ag.Zeit.VORMITTAG, List.of(3));
 
-        assertThrows(IllegalArgumentException.class, () -> new TeilnehmerAggregat(1, null));
-        assertThrows(IllegalArgumentException.class, () -> new AgAggregat(1, null));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlAGAggregat(1, null));
-        assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebotAggregat(1, null));
+        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, ag, null));
+        assertDoesNotThrow(() -> new EinwahlVormittagsAG(null, teilnehmer, jahresAg, 1));
+    }
+
+    @Test
+    void einwahlVormittagsAgLehntUngueltigeKategorieZeitOderJahrgangAb() {
+        Teilnehmer teilnehmer = teilnehmer("3a");
+        Ag entdeckerangebot = ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.VORMITTAG, List.of(3));
+        Ag nachmittagsAg = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(3));
+        Ag falscherJahrgang = ag(Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(2));
+
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlVormittagsAG(null, teilnehmer, entdeckerangebot, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlVormittagsAG(null, teilnehmer, nachmittagsAg, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlVormittagsAG(null, teilnehmer, falscherJahrgang, null));
+    }
+
+    @Test
+    void einwahlVormittagsAgLehntAuswahlKleinerEinsAb() {
+        Teilnehmer teilnehmer = teilnehmer("2a");
+        Ag ag = ag("Sport", Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(2));
+
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlVormittagsAG(null, teilnehmer, ag, 0));
     }
 
     private static Teilnehmer teilnehmer(String klasse) {
@@ -139,11 +164,16 @@ class ModelRecordsTests {
     }
 
     private static Ag ag(Ag.Kategorie kategorie, Ag.Zeit zeit, List<Integer> erlaubteJahrgaenge) {
+        return ag("Titel", kategorie, zeit, erlaubteJahrgaenge);
+    }
+
+    private static Ag ag(String titel, Ag.Kategorie kategorie, Ag.Zeit zeit, List<Integer> erlaubteJahrgaenge) {
         return new Ag(
+                null,
                 Ag.Wochentag.MONTAG,
                 zeit,
                 kategorie,
-                "Titel",
+                titel,
                 "Verantwortlicher",
                 "Ort",
                 10,

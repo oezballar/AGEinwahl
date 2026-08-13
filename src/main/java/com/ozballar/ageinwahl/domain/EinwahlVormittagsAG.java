@@ -4,8 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Embedded;
 import org.springframework.data.relational.core.mapping.Table;
 
-@Table("einwahl_ag")
-public record EinwahlAG(
+@Table("einwahl_vormittags_ag")
+public record EinwahlVormittagsAG(
         @Id
         Integer id,
         @Embedded(onEmpty = Embedded.OnEmpty.USE_NULL, prefix = "teilnehmer_")
@@ -15,7 +15,7 @@ public record EinwahlAG(
         Integer auswahl
 ) {
 
-    public EinwahlAG {
+    public EinwahlVormittagsAG {
         if (teilnehmer == null) {
             throw new IllegalArgumentException("Teilnehmer darf nicht null sein.");
         }
@@ -25,7 +25,7 @@ public record EinwahlAG(
         }
 
         if (!istGueltigeAuswahl(teilnehmer, ag)) {
-            throw new IllegalArgumentException("EinwahlAG darf nur fuer AGs oder Jahres-AGs am Nachmittag erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
+            throw new IllegalArgumentException("EinwahlVormittagsAG darf nur fuer AGs oder Jahres-AGs am Vormittag erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
 
         if (auswahl != null && auswahl < 1) {
@@ -41,7 +41,7 @@ public record EinwahlAG(
         int jahrgang = Character.getNumericValue(teilnehmer.klasse().charAt(0));
 
         return (ag.kategorie() == Ag.Kategorie.AG || ag.kategorie() == Ag.Kategorie.JAHRES_AG)
-                && ag.zeit() == Ag.Zeit.NACHMITTAG
+                && ag.zeit() == Ag.Zeit.VORMITTAG
                 && ag.erlaubteJahrgaenge() != null
                 && ag.erlaubteJahrgaenge().contains(jahrgang);
     }

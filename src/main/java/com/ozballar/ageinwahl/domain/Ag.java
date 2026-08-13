@@ -2,9 +2,14 @@ package com.ozballar.ageinwahl.domain;
 
 import java.util.List;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 
+@Table("ag")
 public record Ag(
+        @Id
+        Integer id,
         Wochentag wochentag,
         Zeit zeit,
         Kategorie kategorie,
