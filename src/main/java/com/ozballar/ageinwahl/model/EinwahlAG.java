@@ -17,7 +17,7 @@ public record EinwahlAG(
         }
 
         if (auswahl != null && auswahl.entrySet().stream().anyMatch(eintrag -> !istGueltigeAuswahl(eintrag.getKey(), eintrag.getValue(), teilnehmer))) {
-            throw new IllegalArgumentException("Auswahl darf nur AGs oder Jahres-AGs am Nachmittag enthalten, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
+            throw new IllegalArgumentException("Auswahl darf nur AGs oder Jahres-AGs am Nachmittag mit einem Schluessel groesser gleich 1 enthalten, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
 
         auswahl = auswahl == null ? new HashMap<>() : new HashMap<>(auswahl);

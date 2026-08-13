@@ -8,7 +8,7 @@ public record Teilnehmer(
 ) {
 
     public Teilnehmer {
-        if (klasse != null && !klasse.matches("[1-4][a-c]?")) {
+        if (klasse == null || !klasse.matches("[1-4][a-c]?")) {
             throw new IllegalArgumentException("Klasse muss aus einer Zahl von 1 bis 4 und optional einem Kleinbuchstaben von a bis c bestehen.");
         }
     }
