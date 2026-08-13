@@ -1,4 +1,4 @@
-package com.ozballar.ageinwahl.model;
+package com.ozballar.ageinwahl.domain;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -108,6 +108,30 @@ class ModelRecordsTests {
 
         assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, new HashMap<>(Map.of(1, ag))));
         assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(teilnehmer(null), new HashMap<>(Map.of(1, ag))));
+    }
+
+    @Test
+    void aggregateBenoetigenRootObjekt() {
+        Teilnehmer teilnehmer = teilnehmer("2a");
+        Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
+        EinwahlAG einwahlAG = new EinwahlAG(teilnehmer, new HashMap<>(Map.of(1, ag)));
+        EinwahlEntdeckerangebot einwahlEntdeckerangebot = new EinwahlEntdeckerangebot(
+                teilnehmer,
+                new HashMap<>(Map.of(
+                        ag(Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.VORMITTAG, List.of(2)),
+                        EinwahlEntdeckerangebot.Auswahl.JA
+                ))
+        );
+
+        assertDoesNotThrow(() -> new TeilnehmerAggregat(1, teilnehmer));
+        assertDoesNotThrow(() -> new AgAggregat(1, ag));
+        assertDoesNotThrow(() -> new EinwahlAGAggregat(1, einwahlAG));
+        assertDoesNotThrow(() -> new EinwahlEntdeckerangebotAggregat(1, einwahlEntdeckerangebot));
+
+        assertThrows(IllegalArgumentException.class, () -> new TeilnehmerAggregat(1, null));
+        assertThrows(IllegalArgumentException.class, () -> new AgAggregat(1, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAGAggregat(1, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebotAggregat(1, null));
     }
 
     private static Teilnehmer teilnehmer(String klasse) {

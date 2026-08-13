@@ -1,6 +1,8 @@
-package com.ozballar.ageinwahl.model;
+package com.ozballar.ageinwahl.domain;
 
 import java.util.List;
+
+import org.springframework.data.relational.core.mapping.MappedCollection;
 
 public record Ag(
         Wochentag wochentag,
@@ -10,6 +12,7 @@ public record Ag(
         String verantwortlicher,
         String ort,
         Integer maximaleTeilnehmerzahl,
+        @MappedCollection(idColumn = "ag_id")
         List<Integer> erlaubteJahrgaenge
 ) {
 

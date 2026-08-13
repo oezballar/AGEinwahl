@@ -1,9 +1,14 @@
-package com.ozballar.ageinwahl.model;
+package com.ozballar.ageinwahl.domain;
 
 import java.util.HashMap;
 
+import org.springframework.data.relational.core.mapping.Embedded;
+import org.springframework.data.relational.core.mapping.MappedCollection;
+
 public record EinwahlAG(
+        @Embedded(onEmpty = Embedded.OnEmpty.USE_NULL, prefix = "teilnehmer_")
         Teilnehmer teilnehmer,
+        @MappedCollection(idColumn = "einwahl_ag_id", keyColumn = "rang")
         HashMap<Integer, Ag> auswahl
 ) {
 

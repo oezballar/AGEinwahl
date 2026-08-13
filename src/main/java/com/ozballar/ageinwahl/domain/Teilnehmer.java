@@ -1,4 +1,4 @@
-package com.ozballar.ageinwahl.model;
+package com.ozballar.ageinwahl.domain;
 
 public record Teilnehmer(
         Integer nr,
