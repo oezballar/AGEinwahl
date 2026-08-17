@@ -4,30 +4,32 @@ import com.ozballar.ageinwahl.domain.Teilnehmer;
 
 public class TeilnehmerForm {
 
-    private Integer nr;
+    private Integer id;
     private String vorname;
     private String name;
     private String klasse;
+    private Teilnehmer.GtTeilnahme gtTeilnahme = Teilnehmer.GtTeilnahme.JA;
 
     public static TeilnehmerForm from(Teilnehmer teilnehmer) {
         TeilnehmerForm form = new TeilnehmerForm();
-        form.setNr(teilnehmer.nr());
+        form.setId(teilnehmer.id());
         form.setVorname(teilnehmer.vorname());
         form.setName(teilnehmer.name());
         form.setKlasse(teilnehmer.klasse());
+        form.setGtTeilnahme(teilnehmer.gtTeilnahme());
         return form;
     }
 
     public Teilnehmer toTeilnehmer() {
-        return new Teilnehmer(nr, vorname, name, klasse);
+        return new Teilnehmer(id, vorname, name, klasse, gtTeilnahme);
     }
 
-    public Integer getNr() {
-        return nr;
+    public Integer getId() {
+        return id;
     }
 
-    public void setNr(Integer nr) {
-        this.nr = nr;
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getVorname() {
@@ -52,5 +54,13 @@ public class TeilnehmerForm {
 
     public void setKlasse(String klasse) {
         this.klasse = klasse;
+    }
+
+    public Teilnehmer.GtTeilnahme getGtTeilnahme() {
+        return gtTeilnahme;
+    }
+
+    public void setGtTeilnahme(Teilnehmer.GtTeilnahme gtTeilnahme) {
+        this.gtTeilnahme = gtTeilnahme;
     }
 }

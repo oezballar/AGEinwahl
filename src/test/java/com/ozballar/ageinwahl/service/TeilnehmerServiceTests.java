@@ -34,7 +34,7 @@ class TeilnehmerServiceTests {
     }
 
     @Test
-    void liefertEinsAlsNaechsteNrWennNochKeineTeilnehmerVorhandenSind() {
+    void liefertEinsAlsNaechsteIdWennNochKeineTeilnehmerVorhandenSind() {
         RepositoryAufruf aufruf = new RepositoryAufruf();
         TeilnehmerRepository teilnehmerRepository = repositoryProxy(TeilnehmerRepository.class, aufruf);
         TeilnehmerService teilnehmerService = new TeilnehmerService(
@@ -44,11 +44,11 @@ class TeilnehmerServiceTests {
                 new FakeEinwahlVormittagsAGService()
         );
 
-        assertEquals(1, teilnehmerService.naechsteNr());
+        assertEquals(1, teilnehmerService.naechsteId());
     }
 
     @Test
-    void ermitteltNaechsteNrAusVorhandenenTeilnehmern() {
+    void ermitteltNaechsteIdAusVorhandenenTeilnehmern() {
         RepositoryAufruf aufruf = new RepositoryAufruf(List.of(
                 teilnehmer(1, "Max", "Muster"),
                 teilnehmer(3, "Erika", "Muster")
@@ -61,7 +61,7 @@ class TeilnehmerServiceTests {
                 new FakeEinwahlVormittagsAGService()
         );
 
-        assertEquals(4, teilnehmerService.naechsteNr());
+        assertEquals(4, teilnehmerService.naechsteId());
     }
 
     @Test
@@ -92,7 +92,7 @@ class TeilnehmerServiceTests {
         TeilnehmerRepository teilnehmerRepository = repositoryProxy(TeilnehmerRepository.class, aufruf);
         TeilnehmerService teilnehmerService = new TeilnehmerService(teilnehmerRepository, new FakeEinwahlEntdeckerangebotService(), new FakeEinwahlAGService(), new FakeEinwahlVormittagsAGService());
 
-        teilnehmerService.findeNachNr(1);
+        teilnehmerService.findeNachId(1);
         assertEquals("findById", aufruf.methodenname);
         assertEquals(List.of(1), aufruf.argumente);
 
@@ -104,7 +104,7 @@ class TeilnehmerServiceTests {
         assertEquals("findAll", aufruf.methodenname);
         assertEquals(List.of(), aufruf.argumente);
 
-        teilnehmerService.loescheNachNr(1);
+        teilnehmerService.loescheNachId(1);
         assertEquals("deleteById", aufruf.methodenname);
         assertEquals(List.of(1), aufruf.argumente);
     }
@@ -132,8 +132,8 @@ class TeilnehmerServiceTests {
         );
     }
 
-    private static Teilnehmer teilnehmer(Integer nr, String vorname, String name) {
-        return new Teilnehmer(nr, vorname, name, "2a");
+    private static Teilnehmer teilnehmer(Integer id, String vorname, String name) {
+        return new Teilnehmer(id, vorname, name, "2a");
     }
 
     private static class RepositoryAufruf {

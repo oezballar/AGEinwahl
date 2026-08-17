@@ -13,17 +13,23 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link active" th:href="@{/ags}">AGs</a>
         <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
-<main class="page">
+<main class="page wide">
     <section class="page-heading">
         <div>
             <h1>AGs</h1>
             <p>Angebote, Zeiten, Kategorien und erlaubte Jahrgaenge verwalten.</p>
         </div>
-        <a class="button primary" th:href="@{/ags/neu}">Neue AG</a>
+        <div class="page-actions">
+            <a class="button secondary" th:href="@{/ags/importieren}">AGs importieren</a>
+            <a class="button primary" th:href="@{/ags/neu}">Neue AG</a>
+        </div>
     </section>
+
+    <p class="success-message" th:if="${erfolg}" th:text="${erfolg}">Import erfolgreich</p>
 
     <section class="matrix-stack" th:if="${!#lists.isEmpty(tabellen)}">
         <section class="matrix-panel" th:each="tabelle : ${tabellen}">

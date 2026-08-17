@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,18 +16,25 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ozballar.ageinwahl.domain.Ag;
 import com.ozballar.ageinwahl.service.AgService;
+import com.ozballar.ageinwahl.service.ExcelImportException;
+import com.ozballar.ageinwahl.service.ExcelImportService;
 
 @Controller
 @RequestMapping("/ags")
 public class AgController {
 
     private final AgService agService;
+    private final ExcelImportService excelImportService;
 
-    public AgController(AgService agService) {
+    public AgController(AgService agService, ExcelImportService excelImportService) {
         this.agService = agService;
+        this.excelImportService = excelImportService;
     }
 
     @GetMapping
@@ -80,12 +91,41 @@ public class AgController {
         return "redirect:/ags";
     }
 
+    @GetMapping("/importieren")
+    public String importieren() {
+        return "ag/import";
+    }
+
+    @PostMapping("/importieren")
+    public String importieren(@RequestParam("datei") MultipartFile datei, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            int anzahl = excelImportService.importiereAgs(datei);
+            redirectAttributes.addFlashAttribute("erfolg", anzahl + " AGs wurden importiert.");
+            return "redirect:/ags";
+        } catch (ExcelImportException | DataIntegrityViolationException ex) {
+            model.addAttribute("fehler", ex.getMessage());
+            return "ag/import";
+        }
+    }
+
+    @GetMapping("/import-vorlage.xlsx")
+    public ResponseEntity<byte[]> importVorlage() {
+        return excelDownload("ags-import-vorlage.xlsx", excelImportService.agVorlage());
+    }
+
     private void formularAttribute(Model model, String titel) {
         model.addAttribute("titel", titel);
         model.addAttribute("wochentage", Ag.Wochentag.values());
         model.addAttribute("zeiten", Ag.Zeit.values());
         model.addAttribute("kategorien", Ag.Kategorie.values());
         model.addAttribute("jahrgaenge", List.of(1, 2, 3, 4));
+    }
+
+    private ResponseEntity<byte[]> excelDownload(String dateiname, byte[] inhalt) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(dateiname).build().toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(inhalt);
     }
 
     public record AgTagesTabelle(String wochentag, List<Ag> ags) {

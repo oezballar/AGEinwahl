@@ -7,13 +7,14 @@ import org.springframework.data.relational.core.mapping.Table;
 public record EinwahlVormittagsAG(
         @Id
         Integer id,
-        Integer teilnehmerNr,
+        Integer teilnehmerId,
         String agTitel,
-        Auswahl auswahl
+        Auswahl auswahl,
+        Boolean zugewiesen
 ) {
 
     public EinwahlVormittagsAG {
-        if (teilnehmerNr == null) {
+        if (teilnehmerId == null) {
             throw new IllegalArgumentException("Teilnehmernummer darf nicht null sein.");
         }
 
@@ -24,14 +25,18 @@ public record EinwahlVormittagsAG(
     }
 
     public EinwahlVormittagsAG(Integer id, Teilnehmer teilnehmer, Ag ag, Auswahl auswahl) {
-        this(id, teilnehmerNrAus(teilnehmer), agTitelAus(ag), auswahl);
+        this(id, teilnehmer, ag, auswahl, false);
+    }
+
+    public EinwahlVormittagsAG(Integer id, Teilnehmer teilnehmer, Ag ag, Auswahl auswahl, Boolean zugewiesen) {
+        this(id, teilnehmerIdAus(teilnehmer), agTitelAus(ag), auswahl, zugewiesen);
 
         if (!istGueltigeAuswahl(teilnehmer, ag)) {
             throw new IllegalArgumentException("EinwahlVormittagsAG darf nur fuer AGs oder Jahres-AGs am Vormittag erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
     }
 
-    private static Integer teilnehmerNrAus(Teilnehmer teilnehmer) {
+    private static Integer teilnehmerIdAus(Teilnehmer teilnehmer) {
         if (teilnehmer == null) {
             throw new IllegalArgumentException("Teilnehmer darf nicht null sein.");
         }
@@ -40,7 +45,7 @@ public record EinwahlVormittagsAG(
             throw new IllegalArgumentException("Teilnehmerklasse darf nicht null sein.");
         }
 
-        return teilnehmer.nr();
+        return teilnehmer.id();
     }
 
     private static String agTitelAus(Ag ag) {

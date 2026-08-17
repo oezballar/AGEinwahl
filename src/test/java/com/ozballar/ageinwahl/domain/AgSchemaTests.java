@@ -29,7 +29,7 @@ class AgSchemaTests {
     @Test
     void teilnehmerIstDurchVornameUndNameEindeutig() {
         String sql = """
-                INSERT INTO teilnehmer (nr, vorname, name, klasse)
+                INSERT INTO teilnehmer (id, vorname, name, klasse)
                 VALUES (?, 'Max', 'Muster', '2a')
                 """;
 

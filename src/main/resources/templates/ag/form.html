@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link active" th:href="@{/ags}">AGs</a>
         <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
@@ -32,6 +33,11 @@
         <label>
             <span>Titel</span>
             <input type="text" required th:field="*{titel}">
+        </label>
+
+        <label>
+            <span>Beschreibung</span>
+            <textarea rows="5" th:field="*{beschreibung}"></textarea>
         </label>
 
         <label>

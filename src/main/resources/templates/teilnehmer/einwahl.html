@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
@@ -26,12 +27,27 @@
 
     <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
 
-    <form method="post" th:action="@{/teilnehmer/{nr}/einwahl(nr=${teilnehmer.nr()})}">
+    <form method="post" th:action="@{/teilnehmer/{id}/einwahl(id=${teilnehmer.id()})}">
         <section class="selection-layout">
             <section class="selection-panel" th:each="tag : ${einwahlTage}">
                 <h2 th:text="${tag.wochentag()}">MONTAG</h2>
                 <div class="selection-time-group" th:each="zeitgruppe : ${tag.zeitgruppen()}">
                     <h3 th:text="${zeitgruppe.zeit()}">NACHMITTAG</h3>
+                    <label class="assignment-control" th:if="${zeitgruppe.zuweisungsAuswahl()}">
+                        <span>Zugewiesen</span>
+                        <select class="compact-select"
+                                th:classappend="${zeitgruppe.offen()} ? ' open-selection'"
+                                th:attr="data-zuweisungs-typ=${zeitgruppe.jaNeinAuswahl()} ? 'ja-nein' : 'prioritaet'"
+                                th:name="${zeitgruppe.zuweisungsFeldname()}">
+                            <option value=""
+                                    th:selected="${zeitgruppe.zugewieseneEinwahlId() == null}"
+                                    th:text="${zeitgruppe.vormittagsAuswahl()} ? 'Keine' : 'Offen'">Offen</option>
+                            <option th:each="option : ${zeitgruppe.optionen()}"
+                                    th:value="${option.id()}"
+                                    th:text="${option.ag().titel()}"
+                                    th:selected="${option.id() == zeitgruppe.zugewieseneEinwahlId()}">AG</option>
+                        </select>
+                    </label>
                     <div class="selection-list">
                         <label class="selection-item" th:each="option : ${zeitgruppe.optionen()}">
                             <span>
@@ -40,6 +56,7 @@
                             <select class="compact-select"
                                     th:if="${option.jaNeinAuswahl()}"
                                     th:classappend="${#strings.isEmpty(option.auswahl())} ? ' open-selection'"
+                                    data-ja-nein-auswahl
                                     th:name="${option.feldname()}">
                                 <option value="" th:selected="${#strings.isEmpty(option.auswahl())}">Offen</option>
                                 <option th:each="auswahl : ${auswahlWerte}"
@@ -47,14 +64,17 @@
                                         th:text="${auswahl}"
                                         th:selected="${auswahl.name() == option.auswahl()}">JA</option>
                             </select>
-                            <input class="compact-input"
-                                   th:if="${option.prioritaetsAuswahl()}"
-                                   type="number"
-                                   min="1"
-                                   placeholder="Offen"
-                                   th:classappend="${#strings.isEmpty(option.auswahl())} ? ' open-selection'"
-                                   th:name="${option.feldname()}"
-                                   th:value="${option.auswahl()}">
+                            <select class="compact-select"
+                                    th:if="${option.prioritaetsAuswahl()}"
+                                    th:classappend="${#strings.isEmpty(option.auswahl())} ? ' open-selection'"
+                                    th:attr="data-einwahl-id=${option.id()}"
+                                    th:name="${option.feldname()}">
+                                <option value="" th:selected="${#strings.isEmpty(option.auswahl())}">Offen</option>
+                                <option th:each="prioritaet : ${zeitgruppe.prioritaeten()}"
+                                        th:value="${prioritaet}"
+                                        th:text="${prioritaet}"
+                                        th:selected="${prioritaet.toString() == option.auswahl()}">1</option>
+                            </select>
                         </label>
                     </div>
                 </div>
@@ -71,5 +91,61 @@
         </div>
     </form>
 </main>
+<script>
+    document.querySelectorAll('.selection-time-group').forEach((gruppe) => {
+        const zuweisung = gruppe.querySelector('.assignment-control select');
+        const prioritaeten = Array.from(gruppe.querySelectorAll('select[data-einwahl-id]'));
+
+        if (!zuweisung || prioritaeten.length === 0) {
+            return;
+        }
+
+        const aktualisiereZuweisung = (geaendertePrioritaet) => {
+            if (geaendertePrioritaet.value === '1') {
+                zuweisung.value = geaendertePrioritaet.dataset.einwahlId;
+                return;
+            }
+
+            if (zuweisung.value !== geaendertePrioritaet.dataset.einwahlId) {
+                return;
+            }
+
+            const erstePrioritaet = prioritaeten.find((prioritaet) => prioritaet.value === '1');
+            zuweisung.value = erstePrioritaet ? erstePrioritaet.dataset.einwahlId : '';
+        };
+
+        prioritaeten.forEach((prioritaet) => {
+            prioritaet.addEventListener('change', () => aktualisiereZuweisung(prioritaet));
+        });
+    });
+
+    document.querySelectorAll('select[data-ja-nein-auswahl]').forEach((auswahl) => {
+        const gruppe = auswahl.closest('.selection-time-group');
+        const zuweisung = gruppe ? gruppe.querySelector('select[data-zuweisungs-typ="ja-nein"]') : null;
+
+        if (!zuweisung) {
+            return;
+        }
+
+        auswahl.addEventListener('change', () => {
+            const einwahlId = auswahl.name.replace(/^(entdecker_|vormittag_)/, '');
+
+            if (auswahl.value === 'JA') {
+                zuweisung.value = einwahlId;
+                return;
+            }
+
+            if (zuweisung.value !== einwahlId) {
+                return;
+            }
+
+            const ersteJaAuswahl = Array.from(gruppe.querySelectorAll('select[data-ja-nein-auswahl]'))
+                    .find((andereAuswahl) => andereAuswahl.value === 'JA');
+            zuweisung.value = ersteJaAuswahl
+                    ? ersteJaAuswahl.name.replace(/^(entdecker_|vormittag_)/, '')
+                    : '';
+        });
+    });
+</script>
 </body>
 </html>

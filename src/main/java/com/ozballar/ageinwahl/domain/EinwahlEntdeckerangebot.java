@@ -7,13 +7,14 @@ import org.springframework.data.relational.core.mapping.Table;
 public record EinwahlEntdeckerangebot(
         @Id
         Integer id,
-        Integer teilnehmerNr,
+        Integer teilnehmerId,
         String agTitel,
-        Auswahl auswahl
+        Auswahl auswahl,
+        Boolean zugewiesen
 ) {
 
     public EinwahlEntdeckerangebot {
-        if (teilnehmerNr == null) {
+        if (teilnehmerId == null) {
             throw new IllegalArgumentException("Teilnehmernummer darf nicht null sein.");
         }
 
@@ -23,14 +24,18 @@ public record EinwahlEntdeckerangebot(
     }
 
     public EinwahlEntdeckerangebot(Integer id, Teilnehmer teilnehmer, Ag ag, Auswahl auswahl) {
-        this(id, teilnehmerNrAus(teilnehmer), agTitelAus(ag), auswahl);
+        this(id, teilnehmer, ag, auswahl, false);
+    }
+
+    public EinwahlEntdeckerangebot(Integer id, Teilnehmer teilnehmer, Ag ag, Auswahl auswahl, Boolean zugewiesen) {
+        this(id, teilnehmerIdAus(teilnehmer), agTitelAus(ag), auswahl, zugewiesen);
 
         if (!istErlaubteAuswahl(teilnehmer, ag)) {
             throw new IllegalArgumentException("EinwahlEntdeckerangebot darf nur fuer Entdeckerangebote erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
     }
 
-    private static Integer teilnehmerNrAus(Teilnehmer teilnehmer) {
+    private static Integer teilnehmerIdAus(Teilnehmer teilnehmer) {
         if (teilnehmer == null) {
             throw new IllegalArgumentException("Teilnehmer darf nicht null sein.");
         }
@@ -39,7 +44,7 @@ public record EinwahlEntdeckerangebot(
             throw new IllegalArgumentException("Teilnehmerklasse darf nicht null sein.");
         }
 
-        return teilnehmer.nr();
+        return teilnehmer.id();
     }
 
     private static String agTitelAus(Ag ag) {
@@ -54,6 +59,7 @@ public record EinwahlEntdeckerangebot(
         int jahrgang = Character.getNumericValue(teilnehmer.klasse().charAt(0));
 
         return ag.kategorie() == Ag.Kategorie.ENTDECKERANGEBOT
+                && (ag.zeit() != Ag.Zeit.NACHMITTAG || teilnehmer.nimmtAnMittagsveranstaltungenTeil())
                 && ag.istFuerJahrgangErlaubt(jahrgang);
     }
 

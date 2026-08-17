@@ -34,7 +34,7 @@ class EinwahlEntdeckerangebotServiceTests {
         service.erstelleEintraegeFuerTeilnehmer(teilnehmer);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(teilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(teilnehmer.id(), gespeicherteEinwahlen.get(0).teilnehmerId());
         assertEquals(passendesEntdeckerangebot.titel(), gespeicherteEinwahlen.get(0).agTitel());
         assertEquals(null, gespeicherteEinwahlen.get(0).auswahl());
     }
@@ -54,7 +54,7 @@ class EinwahlEntdeckerangebotServiceTests {
         service.erstelleEintraegeFuerAg(entdeckerangebot);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(passenderTeilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(passenderTeilnehmer.id(), gespeicherteEinwahlen.get(0).teilnehmerId());
         assertEquals(entdeckerangebot.titel(), gespeicherteEinwahlen.get(0).agTitel());
     }
 
@@ -114,8 +114,8 @@ class EinwahlEntdeckerangebotServiceTests {
         );
     }
 
-    private static Teilnehmer teilnehmer(Integer nr, String klasse) {
-        return new Teilnehmer(nr, "Max", "Muster" + nr, klasse);
+    private static Teilnehmer teilnehmer(Integer id, String klasse) {
+        return new Teilnehmer(id, "Max", "Muster" + id, klasse);
     }
 
     private static Ag ag(String titel, Ag.Kategorie kategorie, List<Integer> erlaubteJahrgaenge) {
@@ -125,6 +125,7 @@ class EinwahlEntdeckerangebotServiceTests {
                 Ag.Zeit.VORMITTAG,
                 kategorie,
                 titel,
+                "Beschreibung",
                 "Verantwortlicher",
                 "Ort",
                 10,

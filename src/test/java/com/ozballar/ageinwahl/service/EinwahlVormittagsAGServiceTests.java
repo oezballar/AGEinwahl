@@ -56,7 +56,7 @@ class EinwahlVormittagsAGServiceTests {
         service.erstelleEintraegeFuerAg(ag);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(passenderTeilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(passenderTeilnehmer.id(), gespeicherteEinwahlen.get(0).teilnehmerId());
         assertEquals(ag.titel(), gespeicherteEinwahlen.get(0).agTitel());
     }
 
@@ -116,8 +116,8 @@ class EinwahlVormittagsAGServiceTests {
         );
     }
 
-    private static Teilnehmer teilnehmer(Integer nr, String klasse) {
-        return new Teilnehmer(nr, "Max", "Muster" + nr, klasse);
+    private static Teilnehmer teilnehmer(Integer id, String klasse) {
+        return new Teilnehmer(id, "Max", "Muster" + id, klasse);
     }
 
     private static Ag ag(String titel, Ag.Kategorie kategorie, Ag.Zeit zeit, List<Integer> erlaubteJahrgaenge) {
@@ -127,6 +127,7 @@ class EinwahlVormittagsAGServiceTests {
                 zeit,
                 kategorie,
                 titel,
+                "Beschreibung",
                 "Verantwortlicher",
                 "Ort",
                 10,

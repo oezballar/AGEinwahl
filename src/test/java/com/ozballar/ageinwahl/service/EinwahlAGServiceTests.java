@@ -1,6 +1,8 @@
 package com.ozballar.ageinwahl.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -56,7 +58,7 @@ class EinwahlAGServiceTests {
         service.erstelleEintraegeFuerAg(ag);
 
         assertEquals(1, gespeicherteEinwahlen.size());
-        assertEquals(passenderTeilnehmer.nr(), gespeicherteEinwahlen.get(0).teilnehmerNr());
+        assertEquals(passenderTeilnehmer.id(), gespeicherteEinwahlen.get(0).teilnehmerId());
         assertEquals(ag.titel(), gespeicherteEinwahlen.get(0).agTitel());
     }
 
@@ -75,6 +77,29 @@ class EinwahlAGServiceTests {
         service.erstelleEintraegeFuerTeilnehmer(teilnehmer);
 
         assertEquals(0, gespeicherteEinwahlen.size());
+    }
+
+    @Test
+    void speichertGenauEineZuweisungFuerNachmittagsgruppe() {
+        Teilnehmer teilnehmer = teilnehmer(1, "2a");
+        Ag sport = ag("Sport", Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
+        Ag musik = ag("Musik", Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
+        EinwahlAG sportEinwahl = new EinwahlAG(1, teilnehmer, sport, 1, true);
+        EinwahlAG musikEinwahl = new EinwahlAG(2, teilnehmer, musik, 2, false);
+        List<EinwahlAG> gespeicherteEinwahlen = new ArrayList<>();
+        EinwahlAGService service = new EinwahlAGService(
+                einwahlRepository(List.of(sportEinwahl, musikEinwahl), gespeicherteEinwahlen),
+                teilnehmerRepository(List.of(teilnehmer)),
+                agRepository(List.of(sport, musik))
+        );
+
+        service.speichereZuweisung(teilnehmer.id(), Ag.Wochentag.MONTAG, musikEinwahl.id());
+
+        assertEquals(2, gespeicherteEinwahlen.size());
+        assertFalse(gespeicherteEinwahlen.get(0).zugewiesen());
+        assertTrue(gespeicherteEinwahlen.get(1).zugewiesen());
+        assertEquals(1, gespeicherteEinwahlen.get(0).auswahl());
+        assertEquals(2, gespeicherteEinwahlen.get(1).auswahl());
     }
 
     private static AgRepository agRepository(List<Ag> ags) {
@@ -116,8 +141,8 @@ class EinwahlAGServiceTests {
         );
     }
 
-    private static Teilnehmer teilnehmer(Integer nr, String klasse) {
-        return new Teilnehmer(nr, "Max", "Muster" + nr, klasse);
+    private static Teilnehmer teilnehmer(Integer id, String klasse) {
+        return new Teilnehmer(id, "Max", "Muster" + id, klasse);
     }
 
     private static Ag ag(String titel, Ag.Kategorie kategorie, Ag.Zeit zeit, List<Integer> erlaubteJahrgaenge) {
@@ -127,6 +152,7 @@ class EinwahlAGServiceTests {
                 zeit,
                 kategorie,
                 titel,
+                "Beschreibung",
                 "Verantwortlicher",
                 "Ort",
                 10,

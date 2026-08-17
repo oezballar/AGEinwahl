@@ -52,9 +52,23 @@ public class EinwahlVormittagsAGService {
 
         return einwahlVormittagsAGRepository.save(new EinwahlVormittagsAG(
                 einwahl.id(),
-                einwahl.teilnehmerNr(),
+                einwahl.teilnehmerId(),
                 einwahl.agTitel(),
-                auswahl
+                auswahl,
+                einwahl.zugewiesen()
+        ));
+    }
+
+    public EinwahlVormittagsAG speichereZuweisung(Integer id, boolean zugewiesen) {
+        EinwahlVormittagsAG einwahl = findeNachId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Einwahl wurde nicht gefunden."));
+
+        return einwahlVormittagsAGRepository.save(new EinwahlVormittagsAG(
+                einwahl.id(),
+                einwahl.teilnehmerId(),
+                einwahl.agTitel(),
+                einwahl.auswahl(),
+                zugewiesen
         ));
     }
 
@@ -68,6 +82,6 @@ public class EinwahlVormittagsAGService {
 
     private boolean istBereitsVorhanden(Teilnehmer teilnehmer, Ag ag) {
         return StreamSupport.stream(einwahlVormittagsAGRepository.findAll().spliterator(), false)
-                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerNr(), teilnehmer.nr()) && Objects.equals(einwahl.agTitel(), ag.titel()));
+                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmer.id()) && Objects.equals(einwahl.agTitel(), ag.titel()));
     }
 }

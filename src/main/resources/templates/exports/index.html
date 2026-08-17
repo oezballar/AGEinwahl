@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exports</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link active" th:href="@{/exports}">Exports</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1>Exports</h1>
+            <p>PDF-Listen für die Ausgabe und Weitergabe erstellen.</p>
+        </div>
+    </section>
+
+    <section class="export-grid">
+        <article class="export-card">
+            <div>
+                <h2>AG-Teilnehmerlisten</h2>
+                <p th:text="'Eine DIN-A4-Seite pro AG mit Verantwortlichem, Zeit, Raum, Titel und zugewiesenen Teilnehmern. Enthaltene AGs: ' + ${agAnzahl}">
+                    Eine DIN-A4-Seite pro AG.
+                </p>
+            </div>
+            <a class="button primary" th:href="@{/exports/ag-teilnehmerlisten.zip}">ZIP herunterladen</a>
+        </article>
+
+        <article class="export-card">
+            <div>
+                <h2>Wunschzettel</h2>
+                <p th:text="'Personalisierte Wunschzettel zum Ausschneiden, zwei pro DIN-A4-Seite. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
+                    Personalisierte Wunschzettel zum Ausschneiden.
+                </p>
+            </div>
+            <a class="button primary" th:href="@{/exports/wunschzettel.pdf}">PDF erstellen</a>
+        </article>
+
+        <article class="export-card">
+            <div>
+                <h2>Klassenübersicht</h2>
+                <p th:text="'Liste für Klassenlehrer mit allen Teilnehmern gruppiert nach Klassen und den jeweils zugewiesenen AGs. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
+                    Liste für Klassenlehrer.
+                </p>
+            </div>
+            <a class="button primary" th:href="@{/exports/klassenuebersicht.zip}">ZIP herunterladen</a>
+        </article>
+    </section>
+</main>
+</body>
+</html>

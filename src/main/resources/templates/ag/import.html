@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGs importieren</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link active" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
+    </nav>
+</aside>
+
+<main class="page narrow">
+    <section class="page-heading">
+        <div>
+            <h1>AGs importieren</h1>
+            <p>Excel-Datei im Format .xlsx auswählen. Die Vorlage enthält die benötigten Spalten und Beispielwerte.</p>
+        </div>
+    </section>
+
+    <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
+
+    <section class="import-panel single">
+        <div>
+            <h2>Excel-Import</h2>
+            <p>Nutzen Sie die Vorlage, damit Kategorien, Zeiten, Wochentage und Jahrgänge korrekt erkannt werden.</p>
+        </div>
+        <form class="import-form" method="post" enctype="multipart/form-data" th:action="@{/ags/importieren}">
+            <input type="file" name="datei" accept=".xlsx" required>
+            <a class="button secondary" th:href="@{/ags/import-vorlage.xlsx}">Vorlage herunterladen</a>
+            <button class="button primary" type="submit">Import starten</button>
+        </form>
+    </section>
+
+    <div class="form-actions">
+        <a class="button secondary" th:href="@{/ags}">Zurück zu AGs</a>
+    </div>
+</main>
+</body>
+</html>

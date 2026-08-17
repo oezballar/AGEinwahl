@@ -13,6 +13,7 @@ public class AgForm {
     private Ag.Zeit zeit;
     private Ag.Kategorie kategorie;
     private String titel;
+    private String beschreibung;
     private String verantwortlicher;
     private String ort;
     private Integer maximaleTeilnehmerzahl;
@@ -25,6 +26,7 @@ public class AgForm {
         form.setZeit(ag.zeit());
         form.setKategorie(ag.kategorie());
         form.setTitel(ag.titel());
+        form.setBeschreibung(ag.beschreibung());
         form.setVerantwortlicher(ag.verantwortlicher());
         form.setOrt(ag.ort());
         form.setMaximaleTeilnehmerzahl(ag.maximaleTeilnehmerzahl());
@@ -41,6 +43,7 @@ public class AgForm {
                 zeit,
                 kategorie,
                 titel,
+                beschreibung,
                 verantwortlicher,
                 ort,
                 maximaleTeilnehmerzahl,
@@ -88,6 +91,14 @@ public class AgForm {
 
     public void setTitel(String titel) {
         this.titel = titel;
+    }
+
+    public String getBeschreibung() {
+        return beschreibung;
+    }
+
+    public void setBeschreibung(String beschreibung) {
+        this.beschreibung = beschreibung;
     }
 
     public String getVerantwortlicher() {

@@ -26,10 +26,11 @@ post_ag() {
   local zeit="$2"
   local kategorie="$3"
   local titel="$4"
-  local verantwortlicher="$5"
-  local ort="$6"
-  local maximale_teilnehmerzahl="$7"
-  local jahrgaenge="$8"
+  local beschreibung="$5"
+  local verantwortlicher="$6"
+  local ort="$7"
+  local maximale_teilnehmerzahl="$8"
+  local jahrgaenge="$9"
   local response_file
   local http_code
 
@@ -44,6 +45,7 @@ post_ag() {
     --data-urlencode "zeit=${zeit}"
     --data-urlencode "kategorie=${kategorie}"
     --data-urlencode "titel=${titel}"
+    --data-urlencode "beschreibung=${beschreibung}"
     --data-urlencode "verantwortlicher=${verantwortlicher}"
     --data-urlencode "ort=${ort}"
     --data-urlencode "maximaleTeilnehmerzahl=${maximale_teilnehmerzahl}"
@@ -71,6 +73,7 @@ post_teilnehmer() {
   local vorname="$1"
   local name="$2"
   local klasse="$3"
+  local gt_teilnahme="$4"
   local response_file
   local http_code
 
@@ -83,7 +86,8 @@ post_teilnehmer() {
       -X POST "${BASE_URL}/teilnehmer" \
       --data-urlencode "vorname=${vorname}" \
       --data-urlencode "name=${name}" \
-      --data-urlencode "klasse=${klasse}"
+      --data-urlencode "klasse=${klasse}" \
+      --data-urlencode "gtTeilnahme=${gt_teilnahme}"
   )"
   rm -f "$response_file"
 
@@ -106,42 +110,46 @@ post_teilnehmer_gruppe() {
   for ((i = 0; i < anzahl; i++)); do
     local vorname="${FIRST_NAMES[$((participant_index % ${#FIRST_NAMES[@]}))]}"
     local name="${LAST_NAMES[$(((participant_index / ${#FIRST_NAMES[@]}) % ${#LAST_NAMES[@]}))]}"
-    post_teilnehmer "$vorname" "$name" "$klasse"
+    local gt_teilnahme="JA"
+    if ((participant_index % 7 == 0)); then
+      gt_teilnahme="NEIN"
+    fi
+    post_teilnehmer "$vorname" "$name" "$klasse" "$gt_teilnahme"
     participant_index=$((participant_index + 1))
   done
 }
 
 printf "Importiere AG-Testdaten nach %s\n" "$BASE_URL"
 
-post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Klänge und Geschichten" "Herr Werner" "Versammlungsraum" 12 "1,2"
-post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Experimente" "Frau Westphal" "mittlerer Betreuungsraum" 15 "1,2"
-post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Entspannungs-AG" "Frau Wollstädter" "Turnhalle" 15 "1,2"
-post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Spielzeit Montag" "Frau Sperling" "vorderer, hinterer Betreuungsraum" 20 "1,2"
+post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Klänge und Geschichten" "Wir hören Musik, erfinden kleine Geschichten und probieren aus, wie Töne Gefühle und Bilder im Kopf entstehen lassen." "Herr Werner" "Versammlungsraum" 12 "1,2"
+post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Experimente" "Hier wird geforscht, gestaunt und ausprobiert. Mit einfachen Versuchen entdecken wir spannende Dinge aus Natur und Alltag." "Frau Westphal" "mittlerer Betreuungsraum" 15 "1,2"
+post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Entspannungs-AG" "Wir machen ruhige Spiele, kleine Bewegungsübungen und Pausen für Körper und Kopf, damit du wieder neue Kraft sammeln kannst." "Frau Wollstädter" "Turnhalle" 15 "1,2"
+post_ag MONTAG NACHMITTAG ENTDECKERANGEBOT "Spielzeit Montag" "Zum Wochenstart ist Zeit zum Spielen, Bauen, Bewegen und Zusammensein mit anderen Kindern." "Frau Sperling" "vorderer, hinterer Betreuungsraum" 20 "1,2"
 
-post_ag DIENSTAG VORMITTAG AG "Chor" "Herr Werner/ Herr Bro Larsen" "Versammlungsraum" 30 "1,2,3,4"
-post_ag DIENSTAG NACHMITTAG JAHRES_AG "Schwarzlicht-Theater" "Frau Monsholo" "Theaterraum" 10 "2,3"
-post_ag DIENSTAG NACHMITTAG AG "Naturfreunde" "Frau Westphal" "mittlerer Betreuungsraum" 15 "1,2,3,4"
-post_ag DIENSTAG NACHMITTAG AG "Stark & fair: ringen, raufen, Kräfte messen" "Herr Dewan" "Turnhalle" 12 "1,2"
-post_ag DIENSTAG NACHMITTAG AG "Entdecke die Welt des Programmierens" "Frau Diegel" "" 10 "3,4"
-post_ag DIENSTAG NACHMITTAG JAHRES_AG "Theater" "Herr Werner/ Frau Lauer" "102N/Versammlungsraum" 14 "3,4"
-post_ag DIENSTAG NACHMITTAG AG "Fußball" "Herr Rößler" "Turnhalle/Sportplatz" 16 "2,3,4"
-post_ag DIENSTAG NACHMITTAG AG "Spielzeit Dienstag" "Frau Sperling" "Schulhof/Betreuungsräume vorne und hinten" 20 "1,2,3,4"
-post_ag DIENSTAG NACHMITTAG AG "Töpfern" "Frau Latsch" "Dachgeschoss" 9 "1,2"
+post_ag DIENSTAG VORMITTAG AG "Chor" "Wenn du gern singst, bist du hier richtig. Wir üben Lieder, hören aufeinander und singen gemeinsam mit Freude." "Herr Werner/ Herr Bro Larsen" "Versammlungsraum" 30 "1,2,3,4"
+post_ag DIENSTAG NACHMITTAG JAHRES_AG "Schwarzlicht-Theater" "Im Schwarzlicht lassen wir leuchtende Dinge tanzen und erzählen kleine Geschichten auf der Bühne." "Frau Monsholo" "Theaterraum" 10 "2,3"
+post_ag DIENSTAG NACHMITTAG AG "Naturfreunde" "Wir entdecken Pflanzen, Tiere und Naturmaterialien und lernen, wie wir gut auf unsere Umwelt achten können." "Frau Westphal" "mittlerer Betreuungsraum" 15 "1,2,3,4"
+post_ag DIENSTAG NACHMITTAG AG "Stark & fair: ringen, raufen, Kräfte messen" "Du darfst dich auspowern, Kräfte messen und dabei lernen, wie man fair und respektvoll miteinander umgeht." "Herr Dewan" "Turnhalle" 12 "1,2"
+post_ag DIENSTAG NACHMITTAG AG "Entdecke die Welt des Programmierens" "Wir lösen kleine Aufgaben am Computer und lernen spielerisch, wie man Figuren und Abläufe programmiert." "Frau Diegel" "" 10 "3,4"
+post_ag DIENSTAG NACHMITTAG JAHRES_AG "Theater" "Wir schlüpfen in Rollen, erfinden Szenen und üben, mutig vor anderen aufzutreten." "Herr Werner/ Frau Lauer" "102N/Versammlungsraum" 14 "3,4"
+post_ag DIENSTAG NACHMITTAG AG "Fußball" "Wir trainieren Passen, Dribbeln und Zusammenspiel und spielen faire Fußballspiele im Team." "Herr Rößler" "Turnhalle/Sportplatz" 16 "2,3,4"
+post_ag DIENSTAG NACHMITTAG AG "Spielzeit Dienstag" "Hier kannst du frei spielen, neue Ideen ausprobieren und mit anderen Kindern eine gute Zeit haben." "Frau Sperling" "Schulhof/Betreuungsräume vorne und hinten" 20 "1,2,3,4"
+post_ag DIENSTAG NACHMITTAG AG "Töpfern" "Aus Ton formen wir Tiere, Schalen, Figuren und eigene Ideen. Deine Hände dürfen kreativ werden." "Frau Latsch" "Dachgeschoss" 9 "1,2"
 
-post_ag MITTWOCH VORMITTAG AG "Mini-Orchester" "Herr Werner" "Versammlungsraum" 12 "3,4"
-post_ag MITTWOCH NACHMITTAG AG "Spielzeit Mittwoch" "Frau Pelger" "Schulhof/Betreuungsräume vorne und hinten" 20 "1,2"
-post_ag MITTWOCH NACHMITTAG AG "Musikalischer Grundkurs" "Frau Martinez" "Versammlungsraum/Theaterraum" 14 "1,2"
-post_ag MITTWOCH NACHMITTAG AG "Trommeln" "Herr Diallo" "Klassenraum grüne Tür" 12 "1,2"
-post_ag MITTWOCH NACHMITTAG AG "Tischtennis" "Herr Heinrich" "Turnhalle" 10 "1,2"
+post_ag MITTWOCH VORMITTAG AG "Mini-Orchester" "Wir probieren Instrumente aus, hören auf den gemeinsamen Klang und machen zusammen Musik." "Herr Werner" "Versammlungsraum" 12 "3,4"
+post_ag MITTWOCH NACHMITTAG AG "Spielzeit Mittwoch" "In der Wochenmitte ist Platz für Bewegung, Spiele, Bauen und gemeinsame Ideen." "Frau Pelger" "Schulhof/Betreuungsräume vorne und hinten" 20 "1,2"
+post_ag MITTWOCH NACHMITTAG AG "Musikalischer Grundkurs" "Wir entdecken Rhythmus, Melodien und Instrumente und machen erste eigene Musikstücke." "Frau Martinez" "Versammlungsraum/Theaterraum" 14 "1,2"
+post_ag MITTWOCH NACHMITTAG AG "Trommeln" "Mit Trommeln und Rhythmusübungen spüren wir den Takt und spielen gemeinsam kraftvolle Klänge." "Herr Diallo" "Klassenraum grüne Tür" 12 "1,2"
+post_ag MITTWOCH NACHMITTAG AG "Tischtennis" "Wir üben Schlägerhaltung, Aufschläge und kleine Spiele. Dabei zählen Konzentration, Bewegung und Fairness." "Herr Heinrich" "Turnhalle" 10 "1,2"
 
-post_ag DONNERSTAG NACHMITTAG AG "Spielzeit Donnerstag" "Frau Pelger" "Schulhof/Betreuungsräume vorne und hinten" 23 "1,2"
-post_ag DONNERSTAG NACHMITTAG AG "Textiles Gestalten" "Frau Sperling" "mittlerer Betreuungsraum" 11 "1,2"
-post_ag DONNERSTAG NACHMITTAG AG "Geräteturnen" "Frau Schiffer" "Turnhalle" 13 "1,2"
+post_ag DONNERSTAG NACHMITTAG AG "Spielzeit Donnerstag" "Du kannst drinnen und draußen spielen, dich bewegen oder mit anderen Kindern eigene Spielideen umsetzen." "Frau Pelger" "Schulhof/Betreuungsräume vorne und hinten" 23 "1,2"
+post_ag DONNERSTAG NACHMITTAG AG "Textiles Gestalten" "Mit Stoff, Faden und Wolle gestalten wir kleine Kunstwerke und lernen einfache Handarbeitstechniken kennen." "Frau Sperling" "mittlerer Betreuungsraum" 11 "1,2"
+post_ag DONNERSTAG NACHMITTAG AG "Geräteturnen" "Wir klettern, balancieren, springen und turnen an Geräten. Dabei probierst du aus, was dein Körper alles kann." "Frau Schiffer" "Turnhalle" 13 "1,2"
 
-post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Basteln" "Frau Pelger" "mittlerer Betreuungsraum" 12 "1,2"
-post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Kinderleichtathletik" "Frau Stoll" "Turnhalle" 15 "1,2"
-post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Bewegungsyoga" "Frau Winkler" "Yogaquartier" 8 "1,2"
-post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Spielzeit Freitag" "Frau Sperling" "Schulhof/Betreuungsräume" 20 "1,2"
+post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Basteln" "Zum Wochenausklang schneiden, kleben, malen und gestalten wir bunte Dinge zum Mitnehmen oder Verschenken." "Frau Pelger" "mittlerer Betreuungsraum" 12 "1,2"
+post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Kinderleichtathletik" "Wir laufen, springen und werfen in kleinen Übungen und Spielen. Bewegung und Spaß stehen im Mittelpunkt." "Frau Stoll" "Turnhalle" 15 "1,2"
+post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Bewegungsyoga" "Mit ruhigen Bewegungen, Fantasiereisen und Atemübungen starten wir entspannt ins Wochenende." "Frau Winkler" "Yogaquartier" 8 "1,2"
+post_ag FREITAG NACHMITTAG ENTDECKERANGEBOT "Spielzeit Freitag" "Am Freitag spielen wir gemeinsam, bewegen uns und lassen die Woche fröhlich ausklingen." "Frau Sperling" "Schulhof/Betreuungsräume" 20 "1,2"
 
 printf "Importiere Teilnehmer-Testdaten\n"
 

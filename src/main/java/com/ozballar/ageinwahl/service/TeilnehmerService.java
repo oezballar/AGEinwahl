@@ -31,6 +31,10 @@ public class TeilnehmerService {
 
     public Teilnehmer speichern(Teilnehmer teilnehmer) {
         Teilnehmer gespeicherterTeilnehmer = teilnehmerRepository.save(teilnehmer);
+        if (!gespeicherterTeilnehmer.nimmtAnMittagsveranstaltungenTeil()) {
+            einwahlEntdeckerangebotService.loescheFuerTeilnehmer(gespeicherterTeilnehmer.id());
+            einwahlAGService.loescheFuerTeilnehmer(gespeicherterTeilnehmer.id());
+        }
         einwahlEntdeckerangebotService.erstelleEintraegeFuerTeilnehmer(gespeicherterTeilnehmer);
         einwahlAGService.erstelleEintraegeFuerTeilnehmer(gespeicherterTeilnehmer);
         einwahlVormittagsAGService.erstelleEintraegeFuerTeilnehmer(gespeicherterTeilnehmer);
@@ -43,20 +47,20 @@ public class TeilnehmerService {
                 .toList();
     }
 
-    public Optional<Teilnehmer> findeNachNr(Integer nr) {
-        return teilnehmerRepository.findById(nr);
+    public Optional<Teilnehmer> findeNachId(Integer id) {
+        return teilnehmerRepository.findById(id);
     }
 
     public Optional<Teilnehmer> findeNachVornameUndName(String vorname, String name) {
         return teilnehmerRepository.findByVornameAndName(vorname, name);
     }
 
-    public Integer naechsteNr() {
+    public Integer naechsteId() {
         return StreamSupport.stream(teilnehmerRepository.findAll().spliterator(), false)
-                .map(Teilnehmer::nr)
-                .filter(nr -> nr != null)
+                .map(Teilnehmer::id)
+                .filter(id -> id != null)
                 .max(Integer::compareTo)
-                .map(nr -> nr + 1)
+                .map(id -> id + 1)
                 .orElse(1);
     }
 
@@ -64,7 +68,7 @@ public class TeilnehmerService {
         return teilnehmerRepository.findAll();
     }
 
-    public void loescheNachNr(Integer nr) {
-        teilnehmerRepository.deleteById(nr);
+    public void loescheNachId(Integer id) {
+        teilnehmerRepository.deleteById(id);
     }
 }

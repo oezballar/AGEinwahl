@@ -106,6 +106,7 @@ class AgServiceTests {
                 Ag.Zeit.NACHMITTAG,
                 Ag.Kategorie.AG,
                 titel,
+                "Beschreibung",
                 "Verantwortlicher",
                 "Ort",
                 10,

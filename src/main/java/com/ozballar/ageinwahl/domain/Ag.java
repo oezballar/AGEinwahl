@@ -14,6 +14,7 @@ public record Ag(
         Zeit zeit,
         Kategorie kategorie,
         String titel,
+        String beschreibung,
         String verantwortlicher,
         String ort,
         Integer maximaleTeilnehmerzahl,

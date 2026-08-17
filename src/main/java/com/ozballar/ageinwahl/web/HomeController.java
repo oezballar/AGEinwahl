@@ -53,22 +53,22 @@ public class HomeController {
         Map<String, Ag> agNachTitel = ags.stream()
                 .collect(Collectors.toMap(Ag::titel, ag -> ag));
 
-        int offeneFelder = (int) entdeckerEinwahlen.stream().filter(einwahl -> einwahl.auswahl() == null).count()
-                + (int) nachmittagsEinwahlen.stream().filter(einwahl -> einwahl.auswahl() == null).count()
-                + (int) vormittagsEinwahlen.stream().filter(einwahl -> einwahl.auswahl() == null).count();
-
         Map<String, Long> belegungNachAgTitel = belegungNachAgTitel(entdeckerEinwahlen, nachmittagsEinwahlen, vormittagsEinwahlen);
         List<AgBelegung> belegungen = ags.stream()
                 .map(ag -> agBelegung(ag, belegungNachAgTitel.getOrDefault(ag.titel(), 0L).intValue()))
                 .sorted(Comparator
-                        .comparing(AgBelegung::ueberbelegt).reversed()
-                        .thenComparing(AgBelegung::wochentag)
+                        .comparing(AgBelegung::wochentagIndex)
+                        .thenComparing(AgBelegung::zeitIndex)
                         .thenComparing(AgBelegung::titel))
                 .toList();
 
-        int abgegebeneAuswahlen = (int) entdeckerEinwahlen.stream().filter(einwahl -> einwahl.auswahl() != null).count()
-                + (int) nachmittagsEinwahlen.stream().filter(einwahl -> einwahl.auswahl() != null).count()
-                + (int) vormittagsEinwahlen.stream().filter(einwahl -> einwahl.auswahl() != null).count();
+        int offeneZuweisungen = offeneEntdeckerZuweisungen(entdeckerEinwahlen, agNachTitel)
+                + offeneVormittagsZuweisungen(vormittagsEinwahlen, agNachTitel)
+                + offeneNachmittagsZuweisungen(nachmittagsEinwahlen, agNachTitel);
+        int zuweisungen = belegungNachAgTitel.values()
+                .stream()
+                .mapToInt(Long::intValue)
+                .sum();
         int ueberbelegteAgs = (int) belegungen.stream()
                 .filter(AgBelegung::ueberbelegt)
                 .count();
@@ -78,11 +78,10 @@ public class HomeController {
 
         model.addAttribute("anzahlTeilnehmer", listeAus(teilnehmerService.findeAlle()).size());
         model.addAttribute("anzahlAgs", ags.size());
-        model.addAttribute("offeneFelder", offeneFelder);
-        model.addAttribute("abgegebeneAuswahlen", abgegebeneAuswahlen);
+        model.addAttribute("offeneFelder", offeneZuweisungen);
+        model.addAttribute("abgegebeneAuswahlen", zuweisungen);
         model.addAttribute("ueberbelegteAgs", ueberbelegteAgs);
         model.addAttribute("freiePlaetze", freiePlaetze);
-        model.addAttribute("offeneNachmittagsZuweisungen", offeneNachmittagsZuweisungen(nachmittagsEinwahlen, agNachTitel));
         model.addAttribute("belegungen", belegungen);
         return "dashboard/index";
     }
@@ -93,38 +92,53 @@ public class HomeController {
             List<EinwahlVormittagsAG> vormittagsEinwahlen
     ) {
         Map<String, Long> belegung = entdeckerEinwahlen.stream()
-                .filter(einwahl -> einwahl.auswahl() == EinwahlEntdeckerangebot.Auswahl.JA)
+                .filter(einwahl -> Boolean.TRUE.equals(einwahl.zugewiesen()))
                 .collect(Collectors.groupingBy(EinwahlEntdeckerangebot::agTitel, Collectors.counting()));
 
         nachmittagsEinwahlen.stream()
-                .filter(einwahl -> Integer.valueOf(1).equals(einwahl.auswahl()))
+                .filter(einwahl -> Boolean.TRUE.equals(einwahl.zugewiesen()))
                 .collect(Collectors.groupingBy(EinwahlAG::agTitel, Collectors.counting()))
                 .forEach((titel, anzahl) -> belegung.merge(titel, anzahl, Long::sum));
 
         vormittagsEinwahlen.stream()
-                .filter(einwahl -> einwahl.auswahl() == EinwahlVormittagsAG.Auswahl.JA)
+                .filter(einwahl -> Boolean.TRUE.equals(einwahl.zugewiesen()))
                 .collect(Collectors.groupingBy(EinwahlVormittagsAG::agTitel, Collectors.counting()))
                 .forEach((titel, anzahl) -> belegung.merge(titel, anzahl, Long::sum));
 
         return belegung;
     }
 
-    private int offeneNachmittagsZuweisungen(List<EinwahlAG> nachmittagsEinwahlen, Map<String, Ag> agNachTitel) {
-        return (int) nachmittagsEinwahlen.stream()
-                .collect(Collectors.groupingBy(einwahl -> new NachmittagsZuweisungSchluessel(
-                        einwahl.teilnehmerNr(),
-                        wochentagVon(einwahl, agNachTitel)
-                )))
+    private int offeneEntdeckerZuweisungen(List<EinwahlEntdeckerangebot> entdeckerEinwahlen, Map<String, Ag> agNachTitel) {
+        return (int) entdeckerEinwahlen.stream()
+                .collect(Collectors.groupingBy(einwahl -> zuweisungSchluessel(einwahl.teilnehmerId(), einwahl.agTitel(), agNachTitel)))
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().wochentag() != null)
-                .filter(entry -> entry.getValue().stream().noneMatch(einwahl -> Integer.valueOf(1).equals(einwahl.auswahl())))
+                .filter(entry -> entry.getValue().stream().noneMatch(einwahl -> Boolean.TRUE.equals(einwahl.zugewiesen())))
                 .count();
     }
 
-    private Ag.Wochentag wochentagVon(EinwahlAG einwahl, Map<String, Ag> agNachTitel) {
-        Ag ag = agNachTitel.get(einwahl.agTitel());
-        return ag == null ? null : ag.wochentag();
+    private int offeneVormittagsZuweisungen(List<EinwahlVormittagsAG> vormittagsEinwahlen, Map<String, Ag> agNachTitel) {
+        return 0;
+    }
+
+    private int offeneNachmittagsZuweisungen(List<EinwahlAG> nachmittagsEinwahlen, Map<String, Ag> agNachTitel) {
+        return (int) nachmittagsEinwahlen.stream()
+                .collect(Collectors.groupingBy(einwahl -> zuweisungSchluessel(einwahl.teilnehmerId(), einwahl.agTitel(), agNachTitel)))
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().wochentag() != null)
+                .filter(entry -> entry.getValue().stream().noneMatch(einwahl -> Boolean.TRUE.equals(einwahl.zugewiesen())))
+                .count();
+    }
+
+    private ZuweisungSchluessel zuweisungSchluessel(Integer teilnehmerId, String agTitel, Map<String, Ag> agNachTitel) {
+        Ag ag = agNachTitel.get(agTitel);
+        return new ZuweisungSchluessel(
+                teilnehmerId,
+                ag == null ? null : ag.wochentag(),
+                ag == null ? null : ag.zeit()
+        );
     }
 
     private AgBelegung agBelegung(Ag ag, int belegt) {
@@ -136,6 +150,8 @@ public class HomeController {
                 ag.wochentag().name(),
                 ag.zeit().name(),
                 ag.kategorie().name(),
+                ag.wochentag().ordinal(),
+                ag.zeit().ordinal(),
                 maximaleTeilnehmerzahl,
                 belegt,
                 prozent,
@@ -153,6 +169,8 @@ public class HomeController {
             String wochentag,
             String zeit,
             String kategorie,
+            int wochentagIndex,
+            int zeitIndex,
             int maximaleTeilnehmerzahl,
             int belegt,
             int prozent,
@@ -161,12 +179,13 @@ public class HomeController {
     ) {
     }
 
-    private record NachmittagsZuweisungSchluessel(
-            Integer teilnehmerNr,
-            Ag.Wochentag wochentag
+    private record ZuweisungSchluessel(
+            Integer teilnehmerId,
+            Ag.Wochentag wochentag,
+            Ag.Zeit zeit
     ) {
-        private NachmittagsZuweisungSchluessel {
-            Objects.requireNonNull(teilnehmerNr);
+        private ZuweisungSchluessel {
+            Objects.requireNonNull(teilnehmerId);
         }
     }
 }

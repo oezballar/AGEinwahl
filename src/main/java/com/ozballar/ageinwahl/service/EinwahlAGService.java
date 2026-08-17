@@ -1,7 +1,10 @@
 package com.ozballar.ageinwahl.service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.springframework.stereotype.Service;
@@ -42,6 +45,10 @@ public class EinwahlAGService {
         return einwahlAGRepository.findAll();
     }
 
+    public void loescheFuerTeilnehmer(Integer teilnehmerId) {
+        einwahlAGRepository.deleteByTeilnehmerId(teilnehmerId);
+    }
+
     public Optional<EinwahlAG> findeNachId(Integer id) {
         return einwahlAGRepository.findById(id);
     }
@@ -52,10 +59,39 @@ public class EinwahlAGService {
 
         return einwahlAGRepository.save(new EinwahlAG(
                 einwahl.id(),
-                einwahl.teilnehmerNr(),
+                einwahl.teilnehmerId(),
                 einwahl.agTitel(),
-                auswahl
+                auswahl,
+                einwahl.zugewiesen()
         ));
+    }
+
+    public void speichereZuweisung(Integer teilnehmerId, Ag.Wochentag wochentag, Integer zugewieseneEinwahlId) {
+        Map<String, Ag> agNachTitel = StreamSupport.stream(agRepository.findAll().spliterator(), false)
+                .collect(Collectors.toMap(Ag::titel, ag -> ag));
+        List<EinwahlAG> einwahlenAmTag = StreamSupport.stream(einwahlAGRepository.findAll().spliterator(), false)
+                .filter(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmerId))
+                .filter(einwahl -> agNachTitel.containsKey(einwahl.agTitel()))
+                .filter(einwahl -> agNachTitel.get(einwahl.agTitel()).wochentag() == wochentag)
+                .toList();
+
+        if (zugewieseneEinwahlId == null) {
+            throw new IllegalArgumentException("Bei den Nachmittags-AGs muss fuer " + wochentag.name() + " eine AG zugewiesen sein.");
+        }
+
+        boolean einwahlIstInGruppe = einwahlenAmTag.stream()
+                .anyMatch(einwahl -> Objects.equals(einwahl.id(), zugewieseneEinwahlId));
+        if (!einwahlIstInGruppe) {
+            throw new IllegalArgumentException("Die zugewiesene AG gehoert nicht zur ausgewaehlten Nachmittagsgruppe.");
+        }
+
+        einwahlenAmTag.forEach(einwahl -> einwahlAGRepository.save(new EinwahlAG(
+                einwahl.id(),
+                einwahl.teilnehmerId(),
+                einwahl.agTitel(),
+                einwahl.auswahl(),
+                Objects.equals(einwahl.id(), zugewieseneEinwahlId)
+        )));
     }
 
     private void erstelleEintragWennGueltigUndNochNichtVorhanden(Teilnehmer teilnehmer, Ag ag) {
@@ -68,6 +104,6 @@ public class EinwahlAGService {
 
     private boolean istBereitsVorhanden(Teilnehmer teilnehmer, Ag ag) {
         return StreamSupport.stream(einwahlAGRepository.findAll().spliterator(), false)
-                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerNr(), teilnehmer.nr()) && Objects.equals(einwahl.agTitel(), ag.titel()));
+                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmer.id()) && Objects.equals(einwahl.agTitel(), ag.titel()));
     }
 }

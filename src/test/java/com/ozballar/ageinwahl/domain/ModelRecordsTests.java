@@ -1,6 +1,8 @@
 package com.ozballar.ageinwahl.domain;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
@@ -14,6 +16,14 @@ class ModelRecordsTests {
         assertDoesNotThrow(() -> new Teilnehmer(1, "Max", "Muster", "1"));
         assertDoesNotThrow(() -> new Teilnehmer(2, "Erika", "Muster", "2b"));
         assertDoesNotThrow(() -> new Teilnehmer(3, "Lisa", "Muster", "4c"));
+    }
+
+    @Test
+    void normalisiertKlassenMitFuehrenderNullUndGrossbuchstaben() {
+        assertEquals("1", new Teilnehmer(1, "Max", "Muster", "01").klasse());
+        assertEquals("1a", new Teilnehmer(2, "Erika", "Muster", "01A").klasse());
+        assertEquals("2b", new Teilnehmer(3, "Lisa", "Muster", "02b").klasse());
+        assertEquals("4c", new Teilnehmer(4, "Tom", "Muster", "4C").klasse());
     }
 
     @Test
@@ -130,6 +140,17 @@ class ModelRecordsTests {
     }
 
     @Test
+    void gtTeilnahmeNeinSchliesstMittagsveranstaltungenAus() {
+        Teilnehmer teilnehmer = new Teilnehmer(1, "Max", "Muster", "2a", Teilnehmer.GtTeilnahme.NEIN);
+        Ag nachmittagsAg = ag("Sport", Ag.Kategorie.AG, Ag.Zeit.NACHMITTAG, List.of(2));
+        Ag mittagsEntdeckerangebot = ag("Entdecken", Ag.Kategorie.ENTDECKERANGEBOT, Ag.Zeit.NACHMITTAG, List.of(2));
+
+        assertFalse(teilnehmer.nimmtAnMittagsveranstaltungenTeil());
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlAG(null, teilnehmer, nachmittagsAg, null));
+        assertThrows(IllegalArgumentException.class, () -> new EinwahlEntdeckerangebot(null, teilnehmer, mittagsEntdeckerangebot, null));
+    }
+
+    @Test
     void einwahlVormittagsAgErlaubtAgUndJahresAgAmVormittagMitPassendemJahrgang() {
         Teilnehmer teilnehmer = teilnehmer("3a");
         Ag ag = ag(Ag.Kategorie.AG, Ag.Zeit.VORMITTAG, List.of(3));
@@ -175,6 +196,7 @@ class ModelRecordsTests {
                 zeit,
                 kategorie,
                 titel,
+                "Beschreibung",
                 "Verantwortlicher",
                 "Ort",
                 10,

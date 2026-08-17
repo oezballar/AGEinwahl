@@ -13,6 +13,7 @@
         <a class="nav-link active" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
@@ -21,6 +22,24 @@
         <div>
             <h1>Übersicht</h1>
             <p>Aktueller Stand der AG-Einwahl.</p>
+        </div>
+    </section>
+
+    <p class="success-message" th:if="${erfolg}" th:text="${erfolg}">Datei geoeffnet</p>
+    <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
+
+    <section class="file-panel">
+        <div class="file-actions file-actions-open">
+            <form class="file-form" method="post" enctype="multipart/form-data" th:action="@{/datei/oeffnen}">
+                <input type="file" name="datei" accept="application/json,.json" aria-label="Datei oeffnen" required>
+                <button class="button secondary" type="submit">Öffnen</button>
+            </form>
+        </div>
+        <div class="file-actions file-actions-download">
+            <form class="download-form" method="get" th:action="@{/datei/download}">
+                <input type="text" name="dateiname" value="ageinwahl.json" aria-label="Download-Dateiname" required>
+                <button class="button primary" type="submit">Download</button>
+            </form>
         </div>
     </section>
 
@@ -34,20 +53,16 @@
             <strong th:text="${anzahlAgs}">0</strong>
         </article>
         <article class="metric warning">
-            <span>Offene Felder</span>
+            <span>Offene Zuweisungen</span>
             <strong th:text="${offeneFelder}">0</strong>
         </article>
         <article class="metric">
-            <span>Auswahlen</span>
+            <span>Zuweisungen</span>
             <strong th:text="${abgegebeneAuswahlen}">0</strong>
         </article>
         <article class="metric danger" th:classappend="${ueberbelegteAgs == 0} ? ' quiet'">
             <span>Überbelegte AGs</span>
             <strong th:text="${ueberbelegteAgs}">0</strong>
-        </article>
-        <article class="metric warning" th:classappend="${offeneNachmittagsZuweisungen == 0} ? ' quiet'">
-            <span>Offene Nachmittage</span>
-            <strong th:text="${offeneNachmittagsZuweisungen}">0</strong>
         </article>
         <article class="metric">
             <span>Freie Plätze</span>
@@ -61,8 +76,11 @@
         </div>
 
         <div class="occupancy-list" th:if="${!#lists.isEmpty(belegungen)}">
-            <article class="occupancy-row" th:each="belegung : ${belegungen}"
-                     th:classappend="${belegung.ueberbelegt()} ? ' overbooked'">
+            <a class="occupancy-row"
+               th:each="belegung : ${belegungen}"
+               th:classappend="${belegung.ueberbelegt()} ? ' overbooked'"
+               th:href="@{/teilnehmer(agTitel=${belegung.titel()})}"
+               th:attr="aria-label='Teilnehmer fuer ' + ${belegung.titel()} + ' anzeigen'">
                 <div class="occupancy-label">
                     <strong th:text="${belegung.titel()}">AG Titel</strong>
                     <span th:text="${belegung.wochentag()} + ' · ' + ${belegung.zeit()} + ' · ' + ${belegung.kategorie()}">DIENSTAG · NACHMITTAG · AG</span>
@@ -74,7 +92,7 @@
                     <strong th:text="${belegung.belegt()} + ' / ' + ${belegung.maximaleTeilnehmerzahl()}">0 / 0</strong>
                     <span th:text="${belegung.prozent()} + '%'">0%</span>
                 </div>
-            </article>
+            </a>
         </div>
 
         <p class="empty" th:if="${#lists.isEmpty(belegungen)}">Es sind noch keine AGs angelegt.</p>

@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
@@ -27,11 +28,7 @@
     <p class="error" th:if="${fehler}" th:text="${fehler}">Fehler</p>
 
     <form class="form" method="post" th:action="@{/teilnehmer}" th:object="${teilnehmerForm}">
-        <label>
-            <span>Nr</span>
-            <input type="number" min="1" readonly disabled th:if="${neu}" th:value="*{nr}">
-            <input type="number" min="1" required readonly th:unless="${neu}" th:field="*{nr}">
-        </label>
+        <input type="hidden" th:field="*{id}" th:if="${!neu}">
 
         <label>
             <span>Vorname</span>
@@ -46,6 +43,14 @@
         <label>
             <span>Klasse</span>
             <input type="text" maxlength="2" pattern="[1-4][a-c]?" required th:field="*{klasse}">
+        </label>
+
+        <label>
+            <span>GT-Teilnahme</span>
+            <select required th:field="*{gtTeilnahme}">
+                <option value="JA">Ja</option>
+                <option value="NEIN">Nein</option>
+            </select>
         </label>
 
         <div class="form-actions">

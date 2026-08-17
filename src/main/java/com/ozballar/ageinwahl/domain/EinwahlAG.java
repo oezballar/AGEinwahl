@@ -7,13 +7,14 @@ import org.springframework.data.relational.core.mapping.Table;
 public record EinwahlAG(
         @Id
         Integer id,
-        Integer teilnehmerNr,
+        Integer teilnehmerId,
         String agTitel,
-        Integer auswahl
+        Integer auswahl,
+        Boolean zugewiesen
 ) {
 
     public EinwahlAG {
-        if (teilnehmerNr == null) {
+        if (teilnehmerId == null) {
             throw new IllegalArgumentException("Teilnehmernummer darf nicht null sein.");
         }
 
@@ -27,14 +28,18 @@ public record EinwahlAG(
     }
 
     public EinwahlAG(Integer id, Teilnehmer teilnehmer, Ag ag, Integer auswahl) {
-        this(id, teilnehmerNrAus(teilnehmer), agTitelAus(ag), auswahl);
+        this(id, teilnehmer, ag, auswahl, false);
+    }
+
+    public EinwahlAG(Integer id, Teilnehmer teilnehmer, Ag ag, Integer auswahl, Boolean zugewiesen) {
+        this(id, teilnehmerIdAus(teilnehmer), agTitelAus(ag), auswahl, zugewiesen);
 
         if (!istGueltigeAuswahl(teilnehmer, ag)) {
             throw new IllegalArgumentException("EinwahlAG darf nur fuer AGs oder Jahres-AGs am Nachmittag erstellt werden, die fuer den Jahrgang des Teilnehmers erlaubt sind.");
         }
     }
 
-    private static Integer teilnehmerNrAus(Teilnehmer teilnehmer) {
+    private static Integer teilnehmerIdAus(Teilnehmer teilnehmer) {
         if (teilnehmer == null) {
             throw new IllegalArgumentException("Teilnehmer darf nicht null sein.");
         }
@@ -43,7 +48,7 @@ public record EinwahlAG(
             throw new IllegalArgumentException("Teilnehmerklasse darf nicht null sein.");
         }
 
-        return teilnehmer.nr();
+        return teilnehmer.id();
     }
 
     private static String agTitelAus(Ag ag) {
@@ -59,6 +64,7 @@ public record EinwahlAG(
 
         return (ag.kategorie() == Ag.Kategorie.AG || ag.kategorie() == Ag.Kategorie.JAHRES_AG)
                 && ag.zeit() == Ag.Zeit.NACHMITTAG
+                && teilnehmer.nimmtAnMittagsveranstaltungenTeil()
                 && ag.istFuerJahrgangErlaubt(jahrgang);
     }
 }

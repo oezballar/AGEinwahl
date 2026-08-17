@@ -1,6 +1,8 @@
 package com.ozballar.ageinwahl.service;
 
 import java.util.Objects;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -42,6 +44,16 @@ public class EinwahlEntdeckerangebotService {
         return einwahlEntdeckerangebotRepository.findAll();
     }
 
+    public void loescheFuerTeilnehmer(Integer teilnehmerId) {
+        Map<String, Ag> agNachTitel = StreamSupport.stream(agRepository.findAll().spliterator(), false)
+                .collect(Collectors.toMap(Ag::titel, ag -> ag));
+        StreamSupport.stream(einwahlEntdeckerangebotRepository.findAll().spliterator(), false)
+                .filter(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmerId))
+                .filter(einwahl -> agNachTitel.containsKey(einwahl.agTitel()))
+                .filter(einwahl -> agNachTitel.get(einwahl.agTitel()).zeit() == Ag.Zeit.NACHMITTAG)
+                .forEach(einwahl -> einwahlEntdeckerangebotRepository.deleteById(einwahl.id()));
+    }
+
     public Optional<EinwahlEntdeckerangebot> findeNachId(Integer id) {
         return einwahlEntdeckerangebotRepository.findById(id);
     }
@@ -52,9 +64,23 @@ public class EinwahlEntdeckerangebotService {
 
         return einwahlEntdeckerangebotRepository.save(new EinwahlEntdeckerangebot(
                 einwahl.id(),
-                einwahl.teilnehmerNr(),
+                einwahl.teilnehmerId(),
                 einwahl.agTitel(),
-                auswahl
+                auswahl,
+                einwahl.zugewiesen()
+        ));
+    }
+
+    public EinwahlEntdeckerangebot speichereZuweisung(Integer id, boolean zugewiesen) {
+        EinwahlEntdeckerangebot einwahl = findeNachId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Einwahl wurde nicht gefunden."));
+
+        return einwahlEntdeckerangebotRepository.save(new EinwahlEntdeckerangebot(
+                einwahl.id(),
+                einwahl.teilnehmerId(),
+                einwahl.agTitel(),
+                einwahl.auswahl(),
+                zugewiesen
         ));
     }
 
@@ -68,6 +94,6 @@ public class EinwahlEntdeckerangebotService {
 
     private boolean istBereitsVorhanden(Teilnehmer teilnehmer, Ag ag) {
         return StreamSupport.stream(einwahlEntdeckerangebotRepository.findAll().spliterator(), false)
-                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerNr(), teilnehmer.nr()) && Objects.equals(einwahl.agTitel(), ag.titel()));
+                .anyMatch(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmer.id()) && Objects.equals(einwahl.agTitel(), ag.titel()));
     }
 }

@@ -5,7 +5,7 @@ BASE_URL="${1:-http://localhost:8080}"
 
 teilnehmer_einwahl_pfade() {
   curl -sS "${BASE_URL}/teilnehmer" \
-    | rg -o '/teilnehmer/[0-9]+/einwahl' \
+    | grep -oE '/teilnehmer/[0-9]+/einwahl' \
     | sort -u -V
 }
 
@@ -13,7 +13,40 @@ feldnamen() {
   local html_file="$1"
   local prefix="$2"
 
-  rg -o "name=\"${prefix}_[0-9]+\"" "$html_file" | rg -o "${prefix}_[0-9]+"
+  grep -oE "name=\"${prefix}_[0-9]+\"" "$html_file" | grep -oE "${prefix}_[0-9]+"
+}
+
+zuweisungs_feldnamen() {
+  local html_file="$1"
+
+  perl -0ne '
+    while (/<div class="selection-time-group".*?<\/div>\s*<\/div>/sg) {
+      my $group = $&;
+      next unless $group =~ /data-zuweisungs-typ="prioritaet"/;
+      next unless $group =~ /name="(zugewiesen_[A-Z]+_NACHMITTAG)"/;
+      print "$1\n";
+    }
+  ' "$html_file"
+}
+
+ja_nein_zuweisungs_gruppen() {
+  local html_file="$1"
+  local prefix="$2"
+
+  perl -0ne '
+    my $prefix = $ENV{"PREFIX"};
+    while (/<div class="selection-time-group".*?<\/div>\s*<\/div>/sg) {
+      my $group = $&;
+      next unless $group =~ /data-zuweisungs-typ="ja-nein"/;
+      next unless $group =~ /name="(zugewiesen_'"$prefix"'_[A-Z]+_[A-Z]+)"/;
+      my $assignment = $1;
+      my @fields = ();
+      while ($group =~ /name="('"$prefix"'_[0-9]+)"/g) {
+        push @fields, $1;
+      }
+      print join("\t", $assignment, @fields), "\n" if @fields;
+    }
+  ' "$html_file"
 }
 
 felder_mit_titel() {
@@ -38,23 +71,20 @@ nachmittags_tage() {
   local html_file="$1"
 
   perl -0ne '
-    while (/<section class="selection-panel".*?<\/section>/sg) {
-      my $day = $&;
-      while ($day =~ /<div class="selection-time-group".*?<\/div>\s*<\/div>/sg) {
-        my $group = $&;
-        next unless $group =~ /<h3>NACHMITTAG<\/h3>/;
-        my @pairs = ();
-        while ($group =~ /<label class="selection-item".*?<\/label>/sg) {
-          my $item = $&;
-          next unless $item =~ /name="(nachmittag_[0-9]+)"/;
-          my $field = $1;
-          my $title = "";
-          $title = $1 if $item =~ /<strong>(.*?)<\/strong>/s;
-          $title =~ s/&amp;/\&/g;
-          push @pairs, "$field=$title";
-        }
-        print join("\t", @pairs), "\n" if @pairs;
+    while (/<div class="selection-time-group".*?<\/div>\s*<\/div>/sg) {
+      my $group = $&;
+      next unless $group =~ /data-zuweisungs-typ="prioritaet"/;
+      my @pairs = ();
+      while ($group =~ /<label class="selection-item".*?<\/label>/sg) {
+        my $item = $&;
+        next unless $item =~ /name="(nachmittag_[0-9]+)"/;
+        my $field = $1;
+        my $title = "";
+        $title = $1 if $item =~ /<strong>(.*?)<\/strong>/s;
+        $title =~ s/&amp;/\&/g;
+        push @pairs, "$field=$title";
       }
+      print join("\t", @pairs), "\n" if @pairs;
     }
   ' "$html_file"
 }
@@ -181,10 +211,16 @@ post_teilnehmer_einwahl() {
   local -a entdecker_felder
   local -a vormittag_felder
   local -a nachmittag_felder
+  local -a zuweisung_felder
+  local -a entdecker_zuweisung_gruppen
+  local -a vormittag_zuweisung_gruppen
+  local -a gruppe
   local -a tag_paare
   local -a tag_felder
   local -a tag_titel
   local -a args
+  local gesamt_felder
+  local zuweisungs_gruppen_anzahl
   declare -A werte=()
 
   html_file="$(mktemp)"
@@ -193,8 +229,11 @@ post_teilnehmer_einwahl() {
   mapfile -t entdecker_felder < <(feldnamen "$html_file" "entdecker")
   mapfile -t vormittag_felder < <(feldnamen "$html_file" "vormittag")
   mapfile -t nachmittag_felder < <(feldnamen "$html_file" "nachmittag")
+  mapfile -t zuweisung_felder < <(zuweisungs_feldnamen "$html_file")
+  mapfile -t entdecker_zuweisung_gruppen < <(PREFIX="entdecker" ja_nein_zuweisungs_gruppen "$html_file" "entdecker")
+  mapfile -t vormittag_zuweisung_gruppen < <(PREFIX="vormittag" ja_nein_zuweisungs_gruppen "$html_file" "vormittag")
 
-  for feld in "${entdecker_felder[@]}" "${vormittag_felder[@]}" "${nachmittag_felder[@]}"; do
+  for feld in "${entdecker_felder[@]}" "${vormittag_felder[@]}" "${nachmittag_felder[@]}" "${zuweisung_felder[@]}"; do
     werte["$feld"]=""
   done
 
@@ -228,7 +267,7 @@ post_teilnehmer_einwahl() {
     index=$((index + 1))
   done < <(PREFIX="vormittag" felder_mit_titel "$html_file" "vormittag")
 
-  # Nachmittag: fuer jede besuchbare Wochentagsgruppe genau eine echte Zuweisung.
+  # Nachmittag: Prioritaeten pro AG plus genau eine echte Zuweisung pro besuchbarem Wochentag.
   tag_index=0
   while IFS= read -r zeile; do
     [[ -z "$zeile" ]] && continue
@@ -241,19 +280,31 @@ post_teilnehmer_einwahl() {
     done
 
     index="$(wahl_index_fuer_titel "$teilnehmer_index" "$tag_index" "${#tag_felder[@]}" "${tag_titel[@]}")"
-    werte["${tag_felder[$index]}"]="1"
+    werte["${zuweisung_felder[$tag_index]}"]="${tag_felder[$index]#nachmittag_}"
 
     for ((i = 0; i < ${#tag_felder[@]}; i++)); do
-      if [[ -z "${werte[${tag_felder[$i]}]}" && ("$vollstaendig" == "true" || $(((teilnehmer_index + i + tag_index) % 4)) -ne 0) ]]; then
-        werte["${tag_felder[$i]}"]=$(((i + tag_index) % 2 + 2))
+      if [[ "$vollstaendig" == "true" || $(((teilnehmer_index + i + tag_index) % 4)) -ne 0 ]]; then
+        werte["${tag_felder[$i]}"]="$((i + 1))"
       fi
     done
     tag_index=$((tag_index + 1))
   done < <(nachmittags_tage "$html_file")
 
+  for zeile in "${entdecker_zuweisung_gruppen[@]}" "${vormittag_zuweisung_gruppen[@]}"; do
+    [[ -z "$zeile" ]] && continue
+    IFS=$'\t' read -ra gruppe <<< "$zeile"
+    werte["${gruppe[0]}"]=""
+    for ((i = 1; i < ${#gruppe[@]}; i++)); do
+      if [[ "${werte[${gruppe[$i]}]}" == "JA" ]]; then
+        werte["${gruppe[0]}"]="${gruppe[$i]##*_}"
+        break
+      fi
+    done
+  done
+
   args=(-sS -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}${path}")
   gesetzt=0
-  for feld in "${entdecker_felder[@]}" "${vormittag_felder[@]}" "${nachmittag_felder[@]}"; do
+  for feld in "${!werte[@]}"; do
     [[ -n "${werte[$feld]}" ]] && gesetzt=$((gesetzt + 1))
     args+=(--data-urlencode "${feld}=${werte[$feld]}")
   done
@@ -267,12 +318,19 @@ post_teilnehmer_einwahl() {
     return 1
   fi
 
-  printf "OK  %s (%s, %s von %s Feldern gesetzt)\n" "$path" "$([[ "$vollstaendig" == "true" ]] && printf "vollstaendig" || printf "offen")" "$gesetzt" "$(( ${#entdecker_felder[@]} + ${#vormittag_felder[@]} + ${#nachmittag_felder[@]} ))"
+  zuweisungs_gruppen_anzahl=$(( ${#zuweisung_felder[@]} + ${#entdecker_zuweisung_gruppen[@]} + ${#vormittag_zuweisung_gruppen[@]} ))
+  gesamt_felder=$(( ${#entdecker_felder[@]} + ${#vormittag_felder[@]} + ${#nachmittag_felder[@]} + zuweisungs_gruppen_anzahl ))
+  printf "OK  %s (%s, %s von %s Feldern gesetzt)\n" "$path" "$([[ "$vollstaendig" == "true" ]] && printf "vollstaendig" || printf "offen")" "$gesetzt" "$gesamt_felder"
 }
 
 printf "Importiere realistische Einwahl-Testdaten nach %s\n" "$BASE_URL"
 
 mapfile -t pfade < <(teilnehmer_einwahl_pfade)
+if ((${#pfade[@]} == 0)); then
+  printf "ERR Keine Teilnehmereinwahlen gefunden. Laeuft die Anwendung unter %s und wurden AG-/Teilnehmer-Testdaten importiert?\n" "$BASE_URL" >&2
+  exit 1
+fi
+
 vollstaendig_bis=$((${#pfade[@]} * 20 / 100))
 
 for ((i = 0; i < ${#pfade[@]}; i++)); do

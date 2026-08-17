@@ -1,0 +1,30 @@
+name: Windows-Paket bauen
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Projekt auschecken
+        uses: actions/checkout@v4
+
+      - name: JDK 19 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '19'
+          cache: maven
+
+      - name: Windows-App-Image bauen
+        shell: cmd
+        run: scripts\build-windows-usb-package.bat
+
+      - name: Windows-Paket bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: AGEinwahl-USB
+          path: dist/AGEinwahl-USB
+          if-no-files-found: error

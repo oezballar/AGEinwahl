@@ -13,17 +13,25 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
 
 <main class="page">
     <section class="page-heading">
         <div>
-            <h1>Teilnehmer</h1>
-            <p>Schueler verwalten und als Grundlage fuer Einwahlen verwenden.</p>
+            <h1 th:text="${agFilter == null} ? 'Teilnehmer' : 'Teilnehmer: ' + ${agFilter}">Teilnehmer</h1>
+            <p th:if="${agFilter == null}">Schueler verwalten und als Grundlage fuer Einwahlen verwenden.</p>
+            <p th:if="${agFilter != null}">Gefiltert nach belegter AG.</p>
         </div>
-        <a class="button primary" th:href="@{/teilnehmer/neu}">Neuer Teilnehmer</a>
+        <div class="page-actions">
+            <a class="button secondary" th:if="${agFilter != null}" th:href="@{/teilnehmer}">Filter entfernen</a>
+            <a class="button secondary" th:if="${agFilter == null}" th:href="@{/teilnehmer/importieren}">Teilnehmer importieren</a>
+            <a class="button primary" th:href="@{/teilnehmer/neu}">Neuer Teilnehmer</a>
+        </div>
     </section>
+
+    <p class="success-message" th:if="${erfolg}" th:text="${erfolg}">Import erfolgreich</p>
 
     <section class="matrix-stack" th:if="${!#lists.isEmpty(tabellen)}">
         <section class="matrix-panel" th:each="tabelle : ${tabellen}">
@@ -36,25 +44,25 @@
                 <table>
                     <thead>
                     <tr>
-                        <th>Nr</th>
                         <th>Vorname</th>
                         <th>Name</th>
+                        <th>GT-Teilnahme</th>
                         <th class="actions">Aktionen</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="eintrag : ${tabelle.teilnehmer()}">
-                        <td th:text="${eintrag.teilnehmer().nr()}">1</td>
                         <td th:text="${eintrag.teilnehmer().vorname()}">Max</td>
                         <td th:text="${eintrag.teilnehmer().name()}">Muster</td>
+                        <td th:text="${eintrag.teilnehmer().nimmtAnMittagsveranstaltungenTeil()} ? 'Ja' : 'Nein'">Ja</td>
                         <td class="actions">
                             <a class="button"
                                th:classappend="${eintrag.einwahlVollstaendig()} ? ' success' : ' warning'"
-                               th:href="@{/teilnehmer/{nr}/einwahl(nr=${eintrag.teilnehmer().nr()})}">
+                               th:href="@{/teilnehmer/{id}/einwahl(id=${eintrag.teilnehmer().id()})}">
                                 Einwahl
                             </a>
-                            <a class="button secondary" th:href="@{/teilnehmer/{nr}/bearbeiten(nr=${eintrag.teilnehmer().nr()})}">Bearbeiten</a>
-                            <form method="post" th:action="@{/teilnehmer/{nr}/loeschen(nr=${eintrag.teilnehmer().nr()})}">
+                            <a class="button secondary" th:href="@{/teilnehmer/{id}/bearbeiten(id=${eintrag.teilnehmer().id()})}">Bearbeiten</a>
+                            <form method="post" th:action="@{/teilnehmer/{id}/loeschen(id=${eintrag.teilnehmer().id()})}">
                                 <button class="button danger" type="submit">Loeschen</button>
                             </form>
                         </td>
@@ -66,7 +74,8 @@
     </section>
 
     <section class="table-section" th:if="${#lists.isEmpty(tabellen)}">
-        <p class="empty">Keine Teilnehmer vorhanden.</p>
+        <p class="empty" th:if="${agFilter == null}">Keine Teilnehmer vorhanden.</p>
+        <p class="empty" th:if="${agFilter != null}" th:text="'Keine Teilnehmer fuer ' + ${agFilter} + ' gefunden.'">Keine Teilnehmer gefunden.</p>
     </section>
 </main>
 </body>
