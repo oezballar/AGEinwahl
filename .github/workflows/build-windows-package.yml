@@ -25,6 +25,6 @@ jobs:
       - name: Windows-Paket bereitstellen
         uses: actions/upload-artifact@v4
         with:
-          name: AGEinwahl-USB
-          path: dist/AGEinwahl-USB
+          name: AGEinwahl-App
+          path: dist/AGEinwahl-App
           if-no-files-found: error
