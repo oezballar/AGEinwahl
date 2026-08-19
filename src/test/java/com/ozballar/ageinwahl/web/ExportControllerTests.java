@@ -157,6 +157,54 @@ class ExportControllerTests {
     }
 
     @Test
+    void stundenplaeneEnthaltenBelegteAgsUndZweiKinderProSeite() {
+        Ag ag = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.AG,
+                "Naturfreunde",
+                "",
+                "Frau Beispiel",
+                "Garten",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Ag unvergebeneAg = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.DIENSTAG,
+                Ag.Zeit.VORMITTAG,
+                Ag.Kategorie.AG,
+                "Nicht belegt",
+                "",
+                "Herr Beispiel",
+                "Raum 1",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Teilnehmer ada = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Lovelace", "3a"));
+        Teilnehmer grace = teilnehmerService.speichern(new Teilnehmer(null, "Grace", "Hopper", "3a"));
+        jdbcTemplate.update("UPDATE einwahl_ag SET zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), ag.titel());
+        jdbcTemplate.update("UPDATE einwahl_vormittags_ag SET zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", grace.id(), unvergebeneAg.titel());
+
+        byte[] pdf = exportController.teilnehmerStundenplaene().getBody();
+
+        assertNotNull(pdf);
+        String inhalt = new String(pdf, Charset.forName("windows-1252"));
+        assertTrue(inhalt.contains("/MediaBox [0 0 595 842]"));
+        assertTrue(inhalt.contains("24 421 m 571 421 l S"));
+        assertTrue(inhalt.contains("(Name: Ada Lovelace) Tj"));
+        assertTrue(inhalt.contains("(Name: Grace Hopper) Tj"));
+        assertTrue(inhalt.contains("(Montag) Tj"));
+        assertTrue(inhalt.contains("(7:30–8:15 Uhr) Tj"));
+        assertTrue(inhalt.contains("(13:30–14:30 Uhr) Tj"));
+        assertTrue(inhalt.contains("(Naturfreunde) Tj"));
+        assertTrue(inhalt.contains("(Nicht belegt) Tj"));
+        assertEquals("attachment; filename=\"teilnehmer-stundenplaene.pdf\"",
+                exportController.teilnehmerStundenplaene().getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
     void zipExporteEnthaltenGesamtPdfUndNachKlasseGruppiertePdf() throws IOException {
         agService.speichern(new Ag(
                 null,

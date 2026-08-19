@@ -55,6 +55,16 @@
             </div>
             <a class="button primary" th:href="@{/exports/klassenuebersicht.zip}">ZIP herunterladen</a>
         </article>
+
+        <article class="export-card">
+            <div>
+                <h2>Stundenpläne für Kinder</h2>
+                <p th:text="'Stundenplan mit den belegten AGs, zwei Kinder pro DIN-A4-Seite. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
+                    Stundenpläne mit den belegten AGs.
+                </p>
+            </div>
+            <a class="button primary" th:href="@{/exports/teilnehmer-stundenplaene.pdf}">PDF erstellen</a>
+        </article>
     </section>
 </main>
 </body>
