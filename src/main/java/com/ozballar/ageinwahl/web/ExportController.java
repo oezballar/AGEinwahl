@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.ozballar.ageinwahl.export.AgTeilnehmerlistenExport;
 import com.ozballar.ageinwahl.export.KlassenuebersichtExport;
+import com.ozballar.ageinwahl.export.TeilnehmerStundenplanExport;
 import com.ozballar.ageinwahl.export.WunschzettelExport;
 import com.ozballar.ageinwahl.service.AgService;
 import com.ozballar.ageinwahl.service.TeilnehmerService;
@@ -26,19 +27,22 @@ public class ExportController {
     private final AgTeilnehmerlistenExport agTeilnehmerlistenExport;
     private final WunschzettelExport wunschzettelExport;
     private final KlassenuebersichtExport klassenuebersichtExport;
+    private final TeilnehmerStundenplanExport teilnehmerStundenplanExport;
 
     public ExportController(
             AgService agService,
             TeilnehmerService teilnehmerService,
             AgTeilnehmerlistenExport agTeilnehmerlistenExport,
             WunschzettelExport wunschzettelExport,
-            KlassenuebersichtExport klassenuebersichtExport
+            KlassenuebersichtExport klassenuebersichtExport,
+            TeilnehmerStundenplanExport teilnehmerStundenplanExport
     ) {
         this.agService = agService;
         this.teilnehmerService = teilnehmerService;
         this.agTeilnehmerlistenExport = agTeilnehmerlistenExport;
         this.wunschzettelExport = wunschzettelExport;
         this.klassenuebersichtExport = klassenuebersichtExport;
+        this.teilnehmerStundenplanExport = teilnehmerStundenplanExport;
     }
 
     @GetMapping
@@ -76,6 +80,11 @@ public class ExportController {
     @GetMapping("/klassenuebersicht.zip")
     public ResponseEntity<byte[]> klassenuebersichtZip() {
         return zipAntwort(klassenuebersichtExport.erstellenZip(), "klassenuebersicht.zip");
+    }
+
+    @GetMapping("/teilnehmer-stundenplaene.pdf")
+    public ResponseEntity<byte[]> teilnehmerStundenplaene() {
+        return pdfAntwort(teilnehmerStundenplanExport.erstellen(), "teilnehmer-stundenplaene.pdf");
     }
 
     private ResponseEntity<byte[]> pdfAntwort(byte[] pdf, String dateiname) {
