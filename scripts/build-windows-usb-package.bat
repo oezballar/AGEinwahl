@@ -4,7 +4,7 @@ setlocal EnableExtensions
 set "PROJECT_DIR=%~dp0.."
 set "JAR_NAME=AGEinwahl-0.0.1-SNAPSHOT.jar"
 set "STAGING_DIR=%TEMP%\AGEinwahl-jpackage-input"
-set "OUTPUT_DIR=%PROJECT_DIR%\dist\AGEinwahl-USB"
+set "OUTPUT_DIR=%PROJECT_DIR%\dist\AGEinwahl-App"
 
 cd /d "%PROJECT_DIR%"
 
@@ -63,7 +63,7 @@ if errorlevel 1 (
 copy /y "scripts\start-ageinwahl.bat" "%OUTPUT_DIR%\Start-AGEinwahl.bat" >nul
 copy /y "scripts\stop-ageinwahl.bat" "%OUTPUT_DIR%\Stop-AGEinwahl.bat" >nul
 copy /y "docs\AGEinwahl-Nutzung.md" "%OUTPUT_DIR%\Anleitung-fuer-die-Nutzung.md" >nul
-copy /y "docs\AGEinwahl-Windows-USB-Installation.md" "%OUTPUT_DIR%\Anleitung-Installation.md" >nul
+copy /y "docs\AGEinwahl-Windows-App-Installation.md" "%OUTPUT_DIR%\Anleitung-Installation.md" >nul
 
 if exist "%STAGING_DIR%" rmdir /s /q "%STAGING_DIR%"
 
