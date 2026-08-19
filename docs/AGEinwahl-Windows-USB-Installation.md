@@ -22,7 +22,7 @@ Vorgehen:
 3. Den Workflow `Windows-Paket bauen` auswaehlen.
 4. `Run workflow` anklicken.
 5. Nach Abschluss den Workflow-Lauf oeffnen.
-6. Unter `Artifacts` das Archiv `AGEinwahl-USB` herunterladen.
+6. Unter `Artifacts` das Archiv `AGEinwahl-App` herunterladen.
 7. Das Archiv entpacken und den enthaltenen Ordner auf den USB-Stick kopieren.
 
 Der Build laeuft dabei auf einem Windows-System mit JDK 19. Dein Linux-Rechner benoetigt dafuer kein Windows und kein lokal installiertes `jpackage`.
@@ -38,11 +38,11 @@ Der Build laeuft dabei auf einem Windows-System mit JDK 19. Dein Linux-Rechner b
    scripts\build-windows-usb-package.bat
    ```
 
-5. Nach erfolgreichem Abschluss den gesamten Ordner `dist\AGEinwahl-USB` auf den USB-Stick kopieren.
+5. Nach erfolgreichem Abschluss den gesamten Ordner `dist\AGEinwahl-App` auf den USB-Stick kopieren.
 
 ## Anwendung auf dem Laptop bereitstellen
 
-1. Den Ordner `AGEinwahl-USB` vom USB-Stick auf den Laptop kopieren, zum Beispiel nach `Dokumente`.
+1. Den Ordner `AGEinwahl-App` vom USB-Stick auf den Laptop kopieren, zum Beispiel nach `Dokumente`.
 2. Den Ordner nicht auseinandernehmen und die Unterordner nicht verschieben.
 3. Fuer die taegliche Nutzung die Datei `Start-AGEinwahl.bat` verwenden.
 
@@ -50,4 +50,4 @@ Die Anwendung bindet ausschliesslich an `127.0.0.1`. Sie ist damit nur auf dem L
 
 ## Aktualisierung
 
-Bei einer neuen Version ein neues Paket bauen und den gesamten alten Ordner `AGEinwahl-USB` ersetzen. Vorher die Daten in der Anwendung ueber `Download` als JSON sichern.
+Bei einer neuen Version ein neues Paket bauen und den gesamten alten Ordner `AGEinwahl-App` ersetzen. Vorher die Daten in der Anwendung ueber `Download` als JSON sichern.

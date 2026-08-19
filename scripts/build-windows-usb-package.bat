@@ -63,7 +63,7 @@ if errorlevel 1 (
 copy /y "scripts\start-ageinwahl.bat" "%OUTPUT_DIR%\Start-AGEinwahl.bat" >nul
 copy /y "scripts\stop-ageinwahl.bat" "%OUTPUT_DIR%\Stop-AGEinwahl.bat" >nul
 copy /y "docs\AGEinwahl-Nutzung.md" "%OUTPUT_DIR%\Anleitung-fuer-die-Nutzung.md" >nul
-copy /y "docs\AGEinwahl-Windows-App-Installation.md" "%OUTPUT_DIR%\Anleitung-Installation.md" >nul
+copy /y "docs\AGEinwahl-Windows-USB-Installation.md" "%OUTPUT_DIR%\Anleitung-Installation.md" >nul
 
 if exist "%STAGING_DIR%" rmdir /s /q "%STAGING_DIR%"
 
@@ -71,4 +71,4 @@ echo.
 echo Fertig. Der portable Ordner liegt hier:
 echo %OUTPUT_DIR%
 echo Diesen gesamten Ordner auf den USB-Stick kopieren.
-pause
+exit /b 0

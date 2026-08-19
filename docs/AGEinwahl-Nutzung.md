@@ -2,7 +2,7 @@
 
 ## Starten
 
-1. Den Ordner `AGEinwahl-USB` oeffnen.
+1. Den Ordner `AGEinwahl-App` oeffnen.
 2. Doppelt auf `Start-AGEinwahl.bat` klicken.
 3. Nach wenigen Sekunden oeffnet sich die Anwendung automatisch im Browser.
 
@@ -14,7 +14,7 @@ Die Anwendung speichert ihre Daten waehrend des Betriebs. Vor dem Beenden oder v
 
 ## Schliessen
 
-1. Den Ordner `AGEinwahl-USB` oeffnen.
+1. Den Ordner `AGEinwahl-App` oeffnen.
 2. Doppelt auf `Stop-AGEinwahl.bat` klicken.
 
 Danach kann das Fenster geschlossen werden. Beim naechsten Gebrauch wieder `Start-AGEinwahl.bat` starten.
