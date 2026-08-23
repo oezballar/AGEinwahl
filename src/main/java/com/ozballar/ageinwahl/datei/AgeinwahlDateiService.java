@@ -90,6 +90,7 @@ public class AgeinwahlDateiService {
                                 ag.kategorie(),
                                 ag.titel(),
                                 ag.beschreibung(),
+                                ag.material(),
                                 ag.verantwortlicher(),
                                 ag.ort(),
                                 ag.maximaleTeilnehmerzahl(),
@@ -174,8 +175,8 @@ public class AgeinwahlDateiService {
         for (AgeinwahlDatei.AgEintrag ag : ags) {
             pruefeId(ag.id(), "AG");
             jdbcTemplate.update("""
-                    INSERT INTO ag (id, wochentag, zeit, kategorie, titel, beschreibung, verantwortlicher, ort, maximale_teilnehmerzahl)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO ag (id, wochentag, zeit, kategorie, titel, beschreibung, material, verantwortlicher, ort, maximale_teilnehmerzahl)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     ag.id(),
                     name(ag.wochentag()),
@@ -183,6 +184,7 @@ public class AgeinwahlDateiService {
                     name(ag.kategorie()),
                     ag.titel(),
                     ag.beschreibung(),
+                    ag.material(),
                     ag.verantwortlicher(),
                     ag.ort(),
                     ag.maximaleTeilnehmerzahl()

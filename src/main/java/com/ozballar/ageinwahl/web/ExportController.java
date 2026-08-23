@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.ozballar.ageinwahl.export.AgTeilnehmerlistenExport;
+import com.ozballar.ageinwahl.export.AgWartelistenExport;
 import com.ozballar.ageinwahl.export.KlassenuebersichtExport;
+import com.ozballar.ageinwahl.export.RueckmeldezettelExport;
 import com.ozballar.ageinwahl.export.TeilnehmerStundenplanExport;
 import com.ozballar.ageinwahl.export.WunschzettelExport;
 import com.ozballar.ageinwahl.service.AgService;
@@ -26,26 +28,32 @@ public class ExportController {
     private final AgService agService;
     private final TeilnehmerService teilnehmerService;
     private final AgTeilnehmerlistenExport agTeilnehmerlistenExport;
+    private final AgWartelistenExport agWartelistenExport;
     private final WunschzettelExport wunschzettelExport;
     private final KlassenuebersichtExport klassenuebersichtExport;
     private final TeilnehmerStundenplanExport teilnehmerStundenplanExport;
+    private final RueckmeldezettelExport rueckmeldezettelExport;
     private final ExcelImportService excelImportService;
 
     public ExportController(
             AgService agService,
             TeilnehmerService teilnehmerService,
             AgTeilnehmerlistenExport agTeilnehmerlistenExport,
+            AgWartelistenExport agWartelistenExport,
             WunschzettelExport wunschzettelExport,
             KlassenuebersichtExport klassenuebersichtExport,
             TeilnehmerStundenplanExport teilnehmerStundenplanExport,
+            RueckmeldezettelExport rueckmeldezettelExport,
             ExcelImportService excelImportService
     ) {
         this.agService = agService;
         this.teilnehmerService = teilnehmerService;
         this.agTeilnehmerlistenExport = agTeilnehmerlistenExport;
+        this.agWartelistenExport = agWartelistenExport;
         this.wunschzettelExport = wunschzettelExport;
         this.klassenuebersichtExport = klassenuebersichtExport;
         this.teilnehmerStundenplanExport = teilnehmerStundenplanExport;
+        this.rueckmeldezettelExport = rueckmeldezettelExport;
         this.excelImportService = excelImportService;
     }
 
@@ -64,6 +72,11 @@ public class ExportController {
     @GetMapping("/ag-teilnehmerlisten.zip")
     public ResponseEntity<byte[]> agTeilnehmerlistenZip() {
         return zipAntwort(agTeilnehmerlistenExport.erstellenZip(), "ag-teilnehmerlisten.zip");
+    }
+
+    @GetMapping("/ag-wartelisten.pdf")
+    public ResponseEntity<byte[]> agWartelisten() {
+        return pdfAntwort(agWartelistenExport.erstellen(), "ag-wartelisten.pdf");
     }
 
     @GetMapping("/einwahlbroschuere.pdf")
@@ -91,9 +104,9 @@ public class ExportController {
         return pdfAntwort(teilnehmerStundenplanExport.erstellen(), "teilnehmer-stundenplaene.pdf");
     }
 
-    @GetMapping("/besuchte-ags.xlsx")
-    public ResponseEntity<byte[]> besuchteAgs() {
-        return excelAntwort(excelImportService.exportiereBesuchteAgs(), "besuchte-ags.xlsx");
+    @GetMapping("/rueckmeldezettel.pdf")
+    public ResponseEntity<byte[]> rueckmeldezettel() {
+        return pdfAntwort(rueckmeldezettelExport.erstellen(), "rueckmeldezettel.pdf");
     }
 
     @GetMapping("/entdeckerangebote.xlsx")

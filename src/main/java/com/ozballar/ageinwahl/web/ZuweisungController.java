@@ -68,6 +68,7 @@ public class ZuweisungController {
         model.addAttribute("ueberbelegteAgs", ueberbelegteAgs);
         model.addAttribute("teilnehmerNamen", teilnehmerNamen);
         model.addAttribute("matrix", matrix(nachmittagsAgs, agNachTitel));
+        model.addAttribute("entdeckerMatrix", entdeckerMatrix(entdeckerangebote, agNachTitel));
         return "zuweisungen/index";
     }
 
@@ -86,6 +87,21 @@ public class ZuweisungController {
         return "redirect:/zuweisungen";
     }
 
+    @PostMapping("/entdecker-zuweisen")
+    public String entdeckerZuweisen(
+            @RequestParam String wochentag,
+            @RequestParam Map<String, String> parameter
+    ) {
+        parameter.entrySet().stream()
+                .filter(entry -> entry.getKey().startsWith("teilnehmer_"))
+                .forEach(entry -> einwahlEntdeckerangebotService.speichereZuweisung(
+                        Integer.valueOf(entry.getKey().substring("teilnehmer_".length())),
+                        Ag.Wochentag.valueOf(wochentag),
+                        Integer.valueOf(entry.getValue())
+                ));
+        return "redirect:/zuweisungen";
+    }
+
     private Matrix matrix(List<EinwahlAG> einwahlen, Map<String, Ag> agNachTitel) {
         Map<Ag.Wochentag, List<EinwahlAG>> einwahlenNachWochentag = einwahlen.stream()
                 .filter(einwahl -> agNachTitel.containsKey(einwahl.agTitel()))
@@ -95,6 +111,57 @@ public class ZuweisungController {
                 .map(entry -> tagesMatrix(entry.getKey(), entry.getValue(), agNachTitel))
                 .toList();
         return new Matrix(tage);
+    }
+
+    private EntdeckerMatrix entdeckerMatrix(
+            List<EinwahlEntdeckerangebot> einwahlen,
+            Map<String, Ag> agNachTitel
+    ) {
+        Map<Ag.Wochentag, List<Ag>> angeboteNachWochentag = agNachTitel.values().stream()
+                .filter(ag -> ag.kategorie() == Ag.Kategorie.ENTDECKERANGEBOT)
+                .collect(Collectors.groupingBy(Ag::wochentag));
+        List<EntdeckerTagesMatrix> tage = angeboteNachWochentag.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> entdeckerTagesMatrix(entry.getKey(), entry.getValue(), einwahlen))
+                .toList();
+        return new EntdeckerMatrix(tage);
+    }
+
+    private EntdeckerTagesMatrix entdeckerTagesMatrix(
+            Ag.Wochentag wochentag,
+            List<Ag> angebote,
+            List<EinwahlEntdeckerangebot> einwahlen
+    ) {
+        List<EntdeckerMatrixZeile> zeilen = angebote.stream()
+                .sorted(Comparator.comparing(Ag::titel))
+                .map(ag -> {
+                    List<EinwahlEntdeckerangebot> einwahlenFuerAg = einwahlen.stream()
+                            .filter(einwahl -> einwahl.agTitel().equals(ag.titel()))
+                            .toList();
+                    int interessenten = (int) einwahlenFuerAg.stream()
+                            .filter(einwahl -> einwahl.auswahl() == EinwahlEntdeckerangebot.Auswahl.JA)
+                            .count();
+                    int belegtePlaetze = (int) einwahlenFuerAg.stream().filter(this::istZugewiesen).count();
+                    int maximaleTeilnehmerzahl = ag == null || ag.maximaleTeilnehmerzahl() == null
+                            ? 0 : ag.maximaleTeilnehmerzahl();
+                    Map<Integer, EinwahlEntdeckerangebot.Auswahl> auswahlen = einwahlenFuerAg.stream()
+                            .filter(einwahl -> einwahl.auswahl() != null)
+                            .collect(Collectors.toMap(EinwahlEntdeckerangebot::teilnehmerId, EinwahlEntdeckerangebot::auswahl));
+                    Map<Integer, Integer> einwahlIds = einwahlenFuerAg.stream()
+                            .collect(Collectors.toMap(EinwahlEntdeckerangebot::teilnehmerId, EinwahlEntdeckerangebot::id));
+                    Map<Integer, Integer> zugewieseneEinwahlIds = einwahlenFuerAg.stream()
+                            .filter(this::istZugewiesen)
+                            .collect(Collectors.toMap(EinwahlEntdeckerangebot::teilnehmerId, EinwahlEntdeckerangebot::id));
+                    return new EntdeckerMatrixZeile(ag.titel(), interessenten, belegtePlaetze, maximaleTeilnehmerzahl,
+                            auswahlen, einwahlIds, zugewieseneEinwahlIds);
+                })
+                .toList();
+        List<Integer> teilnehmerIds = einwahlen.stream()
+                .map(EinwahlEntdeckerangebot::teilnehmerId)
+                .distinct()
+                .sorted()
+                .toList();
+        return new EntdeckerTagesMatrix(wochentagText(wochentag), teilnehmerIds, zeilen);
     }
 
     private TagesMatrix tagesMatrix(
@@ -250,7 +317,13 @@ public class ZuweisungController {
     public record Matrix(List<TagesMatrix> tage) {
     }
 
+    public record EntdeckerMatrix(List<EntdeckerTagesMatrix> tage) {
+    }
+
     public record TagesMatrix(String wochentag, List<Integer> teilnehmerIds, List<MatrixZeile> zeilen) {
+    }
+
+    public record EntdeckerTagesMatrix(String wochentag, List<Integer> teilnehmerIds, List<EntdeckerMatrixZeile> zeilen) {
     }
 
     public record MatrixZeile(
@@ -258,6 +331,20 @@ public class ZuweisungController {
             int belegtePlaetze,
             int maximaleTeilnehmerzahl,
             Map<Integer, Integer> prioritaeten,
+            Map<Integer, Integer> einwahlIds,
+            Map<Integer, Integer> zugewieseneEinwahlIds
+    ) {
+        public boolean ueberbelegt() {
+            return belegtePlaetze > maximaleTeilnehmerzahl;
+        }
+    }
+
+    public record EntdeckerMatrixZeile(
+            String agTitel,
+            int interessenten,
+            int belegtePlaetze,
+            int maximaleTeilnehmerzahl,
+            Map<Integer, EinwahlEntdeckerangebot.Auswahl> auswahlen,
             Map<Integer, Integer> einwahlIds,
             Map<Integer, Integer> zugewieseneEinwahlIds
     ) {

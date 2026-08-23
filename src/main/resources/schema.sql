@@ -5,6 +5,7 @@ CREATE TABLE ag (
     kategorie VARCHAR(30),
     titel VARCHAR(255) NOT NULL UNIQUE,
     beschreibung TEXT,
+    material TEXT,
     verantwortlicher VARCHAR(255),
     ort VARCHAR(255),
     maximale_teilnehmerzahl INTEGER

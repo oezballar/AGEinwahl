@@ -207,6 +207,50 @@ class ExportControllerTests {
     }
 
     @Test
+    void wartelisteEnthaeltNichtZugewiesenePrioritaetEins() {
+        Ag wartelistenAg = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.AG,
+                "Fußball",
+                "",
+                "Frau Beispiel",
+                "Sportplatz",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Ag zugewieseneAg = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.AG,
+                "Naturfreunde",
+                "",
+                "Herr Beispiel",
+                "Garten",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Teilnehmer ada = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Lovelace", "3a"));
+        Teilnehmer grace = teilnehmerService.speichern(new Teilnehmer(null, "Grace", "Hopper", "3a"));
+        jdbcTemplate.update("UPDATE einwahl_ag SET auswahl = 1 WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), wartelistenAg.titel());
+        jdbcTemplate.update("UPDATE einwahl_ag SET auswahl = 1, zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", grace.id(), wartelistenAg.titel());
+        jdbcTemplate.update("UPDATE einwahl_ag SET zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), zugewieseneAg.titel());
+
+        byte[] pdf = exportController.agWartelisten().getBody();
+
+        assertNotNull(pdf);
+        String inhalt = new String(pdf, Charset.forName("windows-1252"));
+        assertTrue(inhalt.contains("(AG-Warteliste) Tj"));
+        assertTrue(inhalt.contains("(AG: Fußball) Tj"));
+        assertTrue(inhalt.contains("(Lovelace, Ada) Tj"));
+        assertFalse(inhalt.contains("Hopper, Grace"));
+        assertEquals("attachment; filename=\"ag-wartelisten.pdf\"",
+                exportController.agWartelisten().getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
     void entdeckerangeboteExportiertInteressentenJeAngebotAlsSpalten() throws IOException {
         Ag angebotA = agService.speichern(new Ag(
                 null,

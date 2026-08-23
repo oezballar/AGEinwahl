@@ -36,6 +36,7 @@ public class ExcelImportService {
     private static final String[] AG_KOPF = {
             "Titel",
             "Beschreibung",
+            "Material",
             "Kategorie",
             "Zeit",
             "Wochentag",
@@ -129,13 +130,14 @@ public class ExcelImportService {
                 int zeile = zeilenIndex + 1;
                 String titel = pflicht(wert(row, 0), "Titel", zeile, fehler);
                 String beschreibung = wert(row, 1);
-                Ag.Kategorie kategorie = enumWert(wert(row, 2), Ag.Kategorie.class, "Kategorie", zeile, fehler);
-                Ag.Zeit zeit = enumWert(wert(row, 3), Ag.Zeit.class, "Zeit", zeile, fehler);
-                Ag.Wochentag wochentag = enumWert(wert(row, 4), Ag.Wochentag.class, "Wochentag", zeile, fehler);
-                String verantwortlicher = wert(row, 5);
-                String ort = wert(row, 6);
-                Integer maximaleTeilnehmerzahl = zahlOderNull(wert(row, 7), "Maximale Teilnehmerzahl", zeile, fehler);
-                List<ErlaubterJahrgang> erlaubteJahrgaenge = jahrgaenge(wert(row, 8), zeile, fehler);
+                String material = wert(row, 2);
+                Ag.Kategorie kategorie = enumWert(wert(row, 3), Ag.Kategorie.class, "Kategorie", zeile, fehler);
+                Ag.Zeit zeit = enumWert(wert(row, 4), Ag.Zeit.class, "Zeit", zeile, fehler);
+                Ag.Wochentag wochentag = enumWert(wert(row, 5), Ag.Wochentag.class, "Wochentag", zeile, fehler);
+                String verantwortlicher = wert(row, 6);
+                String ort = wert(row, 7);
+                Integer maximaleTeilnehmerzahl = zahlOderNull(wert(row, 8), "Maximale Teilnehmerzahl", zeile, fehler);
+                List<ErlaubterJahrgang> erlaubteJahrgaenge = jahrgaenge(wert(row, 9), zeile, fehler);
 
                 if (titel != null && !titelInDatei.add(normalisiert(titel))) {
                     fehler.add("Zeile " + zeile + ": Der AG-Titel kommt in der Datei mehrfach vor.");
@@ -149,7 +151,7 @@ public class ExcelImportService {
                 }
 
                 try {
-                    ags.add(new Ag(null, wochentag, zeit, kategorie, titel, beschreibung, verantwortlicher, ort, maximaleTeilnehmerzahl, erlaubteJahrgaenge));
+                    ags.add(new Ag(null, wochentag, zeit, kategorie, titel, beschreibung, material, verantwortlicher, ort, maximaleTeilnehmerzahl, erlaubteJahrgaenge));
                 } catch (IllegalArgumentException ex) {
                     fehler.add("Zeile " + zeile + ": " + ex.getMessage());
                 }
@@ -172,9 +174,9 @@ public class ExcelImportService {
 
     public byte[] agVorlage() {
         return vorlage("AGs", AG_KOPF, List.of(
-                List.of("Forscher-AG", "Wir experimentieren und entdecken spannende Dinge.", "AG", "NACHMITTAG", "MONTAG", "Frau Beispiel", "Raum 12", "12", "1,2,3"),
-                List.of("Theater entdecken", "Wir spielen Rollen und erfinden kleine Szenen.", "ENTDECKERANGEBOT", "VORMITTAG", "DIENSTAG", "Herr Muster", "Aula", "10", "2"),
-                List.of("Jahres-Chor", "Wir singen das ganze Schuljahr gemeinsam und bereiten Auftritte vor.", "JAHRES_AG", "NACHMITTAG", "MITTWOCH", "Frau Musik", "Musikraum", "18", "3,4")
+                List.of("Forscher-AG", "Wir experimentieren und entdecken spannende Dinge.", "Stifte, Becher, Wasser", "AG", "NACHMITTAG", "MONTAG", "Frau Beispiel", "Raum 12", "12", "1,2,3"),
+                List.of("Theater entdecken", "Wir spielen Rollen und erfinden kleine Szenen.", "Kostüme und Requisiten", "ENTDECKERANGEBOT", "VORMITTAG", "DIENSTAG", "Herr Muster", "Aula", "10", "2"),
+                List.of("Jahres-Chor", "Wir singen das ganze Schuljahr gemeinsam und bereiten Auftritte vor.", "Notenständer und Liederbücher", "JAHRES_AG", "NACHMITTAG", "MITTWOCH", "Frau Musik", "Musikraum", "18", "3,4")
         ));
     }
 
@@ -238,43 +240,6 @@ public class ExcelImportService {
                 List.of("Mila", "Muster", "2a", "Fußball; Chor"),
                 List.of("Ben", "Beispiel", "3b", "")
         ));
-    }
-
-    public byte[] exportiereBesuchteAgs() {
-        Map<Integer, Set<String>> besuchteAgs = besuchteAgService.nachTeilnehmer();
-        List<Teilnehmer> teilnehmer = StreamSupport.stream(teilnehmerService.findeAlle().spliterator(), false)
-                .sorted(java.util.Comparator.comparing(Teilnehmer::name)
-                        .thenComparing(Teilnehmer::vorname)
-                        .thenComparing(Teilnehmer::id))
-                .toList();
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            Sheet sheet = workbook.createSheet("Besuchte AGs");
-            Font fett = workbook.createFont();
-            fett.setBold(true);
-            CellStyle kopfStil = workbook.createCellStyle();
-            kopfStil.setFont(fett);
-            Row kopf = sheet.createRow(0);
-            for (int index = 0; index < BESUCHTE_AG_KOPF.length; index++) {
-                Cell cell = kopf.createCell(index);
-                cell.setCellValue(BESUCHTE_AG_KOPF[index]);
-                cell.setCellStyle(kopfStil);
-            }
-            for (int index = 0; index < teilnehmer.size(); index++) {
-                Teilnehmer teilnehmerEintrag = teilnehmer.get(index);
-                Row row = sheet.createRow(index + 1);
-                row.createCell(0).setCellValue(teilnehmerEintrag.vorname());
-                row.createCell(1).setCellValue(teilnehmerEintrag.name());
-                row.createCell(2).setCellValue(teilnehmerEintrag.klasse());
-                row.createCell(3).setCellValue(besuchteAgs.getOrDefault(teilnehmerEintrag.id(), Set.of()).stream().sorted().collect(Collectors.joining("; ")));
-            }
-            for (int index = 0; index < BESUCHTE_AG_KOPF.length; index++) {
-                sheet.autoSizeColumn(index);
-            }
-            workbook.write(outputStream);
-            return outputStream.toByteArray();
-        } catch (IOException ex) {
-            throw new ExcelImportException("Der Export der besuchten AGs konnte nicht erstellt werden.");
-        }
     }
 
     public byte[] exportiereEntdeckerangebote() {
