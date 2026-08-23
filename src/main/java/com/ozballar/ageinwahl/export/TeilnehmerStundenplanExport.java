@@ -64,11 +64,13 @@ public class TeilnehmerStundenplanExport extends AbstractPdfExport {
         List<PdfPage> pages = new ArrayList<>();
         for (int index = 0; index < teilnehmer.size(); index += 2) {
             List<PdfElement> elemente = new ArrayList<>();
-            addStundenplan(elemente, teilnehmer.get(index), belegteAgs.getOrDefault(teilnehmer.get(index).id(), List.of()), ABSCHNITT_HOEHE);
+            addStundenplan(elemente, teilnehmer.get(index), belegteAgs.getOrDefault(teilnehmer.get(index).id(), List.of()),
+                    ABSCHNITT_HOEHE);
             addLine(elemente, 24, ABSCHNITT_HOEHE, PAGE_WIDTH - 24, ABSCHNITT_HOEHE);
             if (index + 1 < teilnehmer.size()) {
                 Teilnehmer zweiterTeilnehmer = teilnehmer.get(index + 1);
-                addStundenplan(elemente, zweiterTeilnehmer, belegteAgs.getOrDefault(zweiterTeilnehmer.id(), List.of()), 0);
+                addStundenplan(elemente, zweiterTeilnehmer, belegteAgs.getOrDefault(zweiterTeilnehmer.id(), List.of()),
+                        0);
             }
             pages.add(new PdfPage(elemente));
         }
@@ -114,7 +116,7 @@ public class TeilnehmerStundenplanExport extends AbstractPdfExport {
         int oben = yOffset + ABSCHNITT_HOEHE - 28;
         int tabellenOben = yOffset + ABSCHNITT_HOEHE - 75;
         int kopfHoehe = 22;
-        int zeilenHoehe = 125;
+        int zeilenHoehe = 110;
         int tabellenUnten = tabellenOben - kopfHoehe - 2 * zeilenHoehe;
 
         addBoldText(elemente, RAND, oben, 12, "Stundenplan");

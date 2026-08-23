@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link active" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/zuweisungen}">Zuweisungen</a>
         <a class="nav-link" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
@@ -36,6 +37,18 @@
             <input type="file" name="datei" accept=".xlsx" required>
             <a class="button secondary" th:href="@{/teilnehmer/import-vorlage.xlsx}">Vorlage herunterladen</a>
             <button class="button primary" type="submit">Import starten</button>
+        </form>
+    </section>
+
+    <section class="import-panel single">
+        <div>
+            <h2>Besuchte AGs übernehmen</h2>
+            <p>Die Datei enthält je Teilnehmer eine Liste der bereits besuchten AGs. Die Liste ersetzt den bisherigen Bestand.</p>
+        </div>
+        <form class="import-form" method="post" enctype="multipart/form-data" th:action="@{/teilnehmer/besuchte-ags-importieren}">
+            <input type="file" name="datei" accept=".xlsx" required>
+            <a class="button secondary" th:href="@{/teilnehmer/besuchte-ags-vorlage.xlsx}">Vorlage herunterladen</a>
+            <button class="button primary" type="submit">Besuchte AGs importieren</button>
         </form>
     </section>
 

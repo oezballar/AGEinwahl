@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/zuweisungen}">Zuweisungen</a>
         <a class="nav-link active" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
@@ -64,6 +65,14 @@
                 </p>
             </div>
             <a class="button primary" th:href="@{/exports/teilnehmer-stundenplaene.pdf}">PDF erstellen</a>
+        </article>
+
+        <article class="export-card">
+            <div>
+                <h2>Bereits besuchte AGs</h2>
+                <p>Teilnehmerliste mit den AGs, die jedes Kind bereits besucht hat. Diese Datei kann für die nächste Wahl wieder importiert werden.</p>
+            </div>
+            <a class="button primary" th:href="@{/exports/besuchte-ags.xlsx}">Excel herunterladen</a>
         </article>
     </section>
 </main>

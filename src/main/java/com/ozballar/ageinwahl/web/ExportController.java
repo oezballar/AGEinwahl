@@ -16,6 +16,7 @@ import com.ozballar.ageinwahl.export.KlassenuebersichtExport;
 import com.ozballar.ageinwahl.export.TeilnehmerStundenplanExport;
 import com.ozballar.ageinwahl.export.WunschzettelExport;
 import com.ozballar.ageinwahl.service.AgService;
+import com.ozballar.ageinwahl.service.ExcelImportService;
 import com.ozballar.ageinwahl.service.TeilnehmerService;
 
 @Controller
@@ -28,6 +29,7 @@ public class ExportController {
     private final WunschzettelExport wunschzettelExport;
     private final KlassenuebersichtExport klassenuebersichtExport;
     private final TeilnehmerStundenplanExport teilnehmerStundenplanExport;
+    private final ExcelImportService excelImportService;
 
     public ExportController(
             AgService agService,
@@ -35,7 +37,8 @@ public class ExportController {
             AgTeilnehmerlistenExport agTeilnehmerlistenExport,
             WunschzettelExport wunschzettelExport,
             KlassenuebersichtExport klassenuebersichtExport,
-            TeilnehmerStundenplanExport teilnehmerStundenplanExport
+            TeilnehmerStundenplanExport teilnehmerStundenplanExport,
+            ExcelImportService excelImportService
     ) {
         this.agService = agService;
         this.teilnehmerService = teilnehmerService;
@@ -43,6 +46,7 @@ public class ExportController {
         this.wunschzettelExport = wunschzettelExport;
         this.klassenuebersichtExport = klassenuebersichtExport;
         this.teilnehmerStundenplanExport = teilnehmerStundenplanExport;
+        this.excelImportService = excelImportService;
     }
 
     @GetMapping
@@ -87,6 +91,11 @@ public class ExportController {
         return pdfAntwort(teilnehmerStundenplanExport.erstellen(), "teilnehmer-stundenplaene.pdf");
     }
 
+    @GetMapping("/besuchte-ags.xlsx")
+    public ResponseEntity<byte[]> besuchteAgs() {
+        return excelAntwort(excelImportService.exportiereBesuchteAgs(), "besuchte-ags.xlsx");
+    }
+
     private ResponseEntity<byte[]> pdfAntwort(byte[] pdf, String dateiname) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -109,6 +118,13 @@ public class ExportController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(zip);
+    }
+
+    private ResponseEntity<byte[]> excelAntwort(byte[] excel, String dateiname) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(dateiname).build());
+        return ResponseEntity.ok().headers(headers).body(excel);
     }
 
     private long anzahl(Iterable<?> iterable) {

@@ -6,9 +6,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.StreamSupport;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -41,14 +43,17 @@ public class ExcelImportService {
             "Maximale Teilnehmerzahl",
             "Erlaubte Jahrgänge"
     };
+    private static final String[] BESUCHTE_AG_KOPF = {"Vorname", "Name", "Klasse", "Bereits besuchte AGs"};
 
     private final TeilnehmerService teilnehmerService;
     private final AgService agService;
+    private final BesuchteAgService besuchteAgService;
     private final DataFormatter formatter = new DataFormatter(Locale.GERMANY);
 
-    public ExcelImportService(TeilnehmerService teilnehmerService, AgService agService) {
+    public ExcelImportService(TeilnehmerService teilnehmerService, AgService agService, BesuchteAgService besuchteAgService) {
         this.teilnehmerService = teilnehmerService;
         this.agService = agService;
+        this.besuchteAgService = besuchteAgService;
     }
 
     @Transactional
@@ -163,6 +168,105 @@ public class ExcelImportService {
                 List.of("Theater entdecken", "Wir spielen Rollen und erfinden kleine Szenen.", "ENTDECKERANGEBOT", "VORMITTAG", "DIENSTAG", "Herr Muster", "Aula", "10", "2"),
                 List.of("Jahres-Chor", "Wir singen das ganze Schuljahr gemeinsam und bereiten Auftritte vor.", "JAHRES_AG", "NACHMITTAG", "MITTWOCH", "Frau Musik", "Musikraum", "18", "3,4")
         ));
+    }
+
+    @Transactional
+    public int importiereBesuchteAgs(MultipartFile datei) {
+        pruefeDatei(datei);
+        List<String> fehler = new ArrayList<>();
+        Map<Integer, Set<String>> besuchteAgs = new java.util.HashMap<>();
+        Set<String> namenInDatei = new HashSet<>();
+
+        try (Workbook workbook = workbook(datei)) {
+            Sheet sheet = ersteTabelle(workbook);
+            pruefeKopfzeile(sheet, BESUCHTE_AG_KOPF, fehler);
+            for (int zeilenIndex = 1; zeilenIndex <= sheet.getLastRowNum(); zeilenIndex++) {
+                Row row = sheet.getRow(zeilenIndex);
+                if (istLeer(row, BESUCHTE_AG_KOPF.length)) {
+                    continue;
+                }
+                int zeile = zeilenIndex + 1;
+                String vorname = pflicht(wert(row, 0), "Vorname", zeile, fehler);
+                String name = pflicht(wert(row, 1), "Name", zeile, fehler);
+                pflicht(wert(row, 2), "Klasse", zeile, fehler);
+                String nameSchluessel = normalisiert(vorname) + "|" + normalisiert(name);
+                if (!namenInDatei.add(nameSchluessel)) {
+                    fehler.add("Zeile " + zeile + ": Vorname und Name kommen in der Datei mehrfach vor.");
+                }
+
+                Teilnehmer teilnehmer = vorname == null || name == null ? null
+                        : teilnehmerService.findeNachVornameUndName(vorname, name).orElse(null);
+                if (teilnehmer == null && vorname != null && name != null) {
+                    fehler.add("Zeile " + zeile + ": Teilnehmer " + vorname + " " + name + " ist nicht vorhanden.");
+                    continue;
+                }
+
+                Set<String> agTitelDerZeile = new HashSet<>();
+                for (String agTitelKandidat : wert(row, 3).split(";")) {
+                    String agTitel = agTitelKandidat.strip();
+                    if (agTitel.isBlank()) {
+                        continue;
+                    }
+                    if (!agTitelDerZeile.add(agTitel)) {
+                        fehler.add("Zeile " + zeile + ": Die AG " + agTitel + " ist doppelt eingetragen.");
+                    }
+                    if (agService.findeNachTitel(agTitel).isEmpty()) {
+                        fehler.add("Zeile " + zeile + ": Die AG " + agTitel + " ist nicht vorhanden.");
+                    }
+                }
+                besuchteAgs.put(teilnehmer.id(), agTitelDerZeile);
+            }
+        } catch (IOException ex) {
+            throw new ExcelImportException("Die Excel-Datei konnte nicht gelesen werden. Bitte eine .xlsx-Datei mit der Vorlage verwenden.");
+        }
+
+        pruefeImportierbar(fehler, besuchteAgs.size(), "Teilnehmer");
+        besuchteAgService.ersetzeAlle(besuchteAgs);
+        return besuchteAgs.size();
+    }
+
+    public byte[] besuchteAgsVorlage() {
+        return vorlage("Besuchte AGs", BESUCHTE_AG_KOPF, List.of(
+                List.of("Mila", "Muster", "2a", "Fußball; Chor"),
+                List.of("Ben", "Beispiel", "3b", "")
+        ));
+    }
+
+    public byte[] exportiereBesuchteAgs() {
+        Map<Integer, Set<String>> besuchteAgs = besuchteAgService.nachTeilnehmer();
+        List<Teilnehmer> teilnehmer = StreamSupport.stream(teilnehmerService.findeAlle().spliterator(), false)
+                .sorted(java.util.Comparator.comparing(Teilnehmer::name)
+                        .thenComparing(Teilnehmer::vorname)
+                        .thenComparing(Teilnehmer::id))
+                .toList();
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Besuchte AGs");
+            Font fett = workbook.createFont();
+            fett.setBold(true);
+            CellStyle kopfStil = workbook.createCellStyle();
+            kopfStil.setFont(fett);
+            Row kopf = sheet.createRow(0);
+            for (int index = 0; index < BESUCHTE_AG_KOPF.length; index++) {
+                Cell cell = kopf.createCell(index);
+                cell.setCellValue(BESUCHTE_AG_KOPF[index]);
+                cell.setCellStyle(kopfStil);
+            }
+            for (int index = 0; index < teilnehmer.size(); index++) {
+                Teilnehmer teilnehmerEintrag = teilnehmer.get(index);
+                Row row = sheet.createRow(index + 1);
+                row.createCell(0).setCellValue(teilnehmerEintrag.vorname());
+                row.createCell(1).setCellValue(teilnehmerEintrag.name());
+                row.createCell(2).setCellValue(teilnehmerEintrag.klasse());
+                row.createCell(3).setCellValue(besuchteAgs.getOrDefault(teilnehmerEintrag.id(), Set.of()).stream().sorted().collect(Collectors.joining("; ")));
+            }
+            for (int index = 0; index < BESUCHTE_AG_KOPF.length; index++) {
+                sheet.autoSizeColumn(index);
+            }
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new ExcelImportException("Der Export der besuchten AGs konnte nicht erstellt werden.");
+        }
     }
 
     private void pruefeDatei(MultipartFile datei) {
