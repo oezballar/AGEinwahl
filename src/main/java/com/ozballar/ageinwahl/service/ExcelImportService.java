@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ozballar.ageinwahl.domain.Ag;
+import com.ozballar.ageinwahl.domain.EinwahlEntdeckerangebot;
 import com.ozballar.ageinwahl.domain.ErlaubterJahrgang;
 import com.ozballar.ageinwahl.domain.Teilnehmer;
 
@@ -47,12 +48,19 @@ public class ExcelImportService {
 
     private final TeilnehmerService teilnehmerService;
     private final AgService agService;
+    private final EinwahlEntdeckerangebotService einwahlEntdeckerangebotService;
     private final BesuchteAgService besuchteAgService;
     private final DataFormatter formatter = new DataFormatter(Locale.GERMANY);
 
-    public ExcelImportService(TeilnehmerService teilnehmerService, AgService agService, BesuchteAgService besuchteAgService) {
+    public ExcelImportService(
+            TeilnehmerService teilnehmerService,
+            AgService agService,
+            EinwahlEntdeckerangebotService einwahlEntdeckerangebotService,
+            BesuchteAgService besuchteAgService
+    ) {
         this.teilnehmerService = teilnehmerService;
         this.agService = agService;
+        this.einwahlEntdeckerangebotService = einwahlEntdeckerangebotService;
         this.besuchteAgService = besuchteAgService;
     }
 
@@ -266,6 +274,69 @@ public class ExcelImportService {
             return outputStream.toByteArray();
         } catch (IOException ex) {
             throw new ExcelImportException("Der Export der besuchten AGs konnte nicht erstellt werden.");
+        }
+    }
+
+    public byte[] exportiereEntdeckerangebote() {
+        List<Ag> entdeckerangebote = StreamSupport.stream(agService.findeAlle().spliterator(), false)
+                .filter(ag -> ag.kategorie() == Ag.Kategorie.ENTDECKERANGEBOT)
+                .sorted(java.util.Comparator.comparing(Ag::titel))
+                .toList();
+        List<EinwahlEntdeckerangebot> einwahlen = StreamSupport.stream(einwahlEntdeckerangebotService.findeAlle().spliterator(), false)
+                .filter(einwahl -> einwahl.auswahl() == EinwahlEntdeckerangebot.Auswahl.JA)
+                .toList();
+        Map<Integer, Teilnehmer> teilnehmerNachId = StreamSupport.stream(teilnehmerService.findeAlle().spliterator(), false)
+                .collect(Collectors.toMap(Teilnehmer::id, teilnehmer -> teilnehmer));
+        List<List<Teilnehmer>> interessentenNachAngebot = entdeckerangebote.stream()
+                .map(angebot -> einwahlen.stream()
+                        .filter(einwahl -> einwahl.agTitel().equals(angebot.titel()))
+                        .map(einwahl -> teilnehmerNachId.get(einwahl.teilnehmerId()))
+                        .filter(java.util.Objects::nonNull)
+                        .sorted(java.util.Comparator.comparing(Teilnehmer::name)
+                                .thenComparing(Teilnehmer::vorname)
+                                .thenComparing(Teilnehmer::id))
+                        .toList())
+                .toList();
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Entdeckerangebote");
+            Font fett = workbook.createFont();
+            fett.setBold(true);
+            CellStyle kopfStil = workbook.createCellStyle();
+            kopfStil.setFont(fett);
+            CellStyle listeStil = workbook.createCellStyle();
+            listeStil.setWrapText(true);
+            listeStil.setVerticalAlignment(org.apache.poi.ss.usermodel.VerticalAlignment.TOP);
+
+            Row kopf = sheet.createRow(0);
+            for (int index = 0; index < entdeckerangebote.size(); index++) {
+                Cell angebotsCell = kopf.createCell(index);
+                angebotsCell.setCellValue(entdeckerangebote.get(index).titel());
+                angebotsCell.setCellStyle(kopfStil);
+                sheet.setColumnWidth(index, 32 * 256);
+            }
+
+            int maximaleInteressenten = interessentenNachAngebot.stream()
+                    .mapToInt(List::size)
+                    .max()
+                    .orElse(0);
+            for (int zeilenIndex = 0; zeilenIndex < maximaleInteressenten; zeilenIndex++) {
+                Row row = sheet.createRow(zeilenIndex + 1);
+                for (int angebotIndex = 0; angebotIndex < interessentenNachAngebot.size(); angebotIndex++) {
+                    List<Teilnehmer> interessenten = interessentenNachAngebot.get(angebotIndex);
+                    if (zeilenIndex < interessenten.size()) {
+                        Teilnehmer kind = interessenten.get(zeilenIndex);
+                        Cell cell = row.createCell(angebotIndex);
+                        cell.setCellValue(kind.vorname() + " " + kind.name() + " (" + kind.klasse() + ")");
+                        cell.setCellStyle(listeStil);
+                    }
+                }
+            }
+            sheet.createFreezePane(0, 1);
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new ExcelImportException("Der Export der Entdeckerangebote konnte nicht erstellt werden.");
         }
     }
 

@@ -96,6 +96,11 @@ public class ExportController {
         return excelAntwort(excelImportService.exportiereBesuchteAgs(), "besuchte-ags.xlsx");
     }
 
+    @GetMapping("/entdeckerangebote.xlsx")
+    public ResponseEntity<byte[]> entdeckerangebote() {
+        return excelAntwort(excelImportService.exportiereEntdeckerangebote(), "entdeckerangebote.xlsx");
+    }
+
     private ResponseEntity<byte[]> pdfAntwort(byte[] pdf, String dateiname) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
