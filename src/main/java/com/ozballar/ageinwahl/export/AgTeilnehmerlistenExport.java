@@ -150,7 +150,7 @@ public class AgTeilnehmerlistenExport extends AbstractPdfExport {
             }
             texte.add(new PdfText(48, y, 10, position + "."));
             texte.add(new PdfText(92, y, 10, eintrag.klasse()));
-            texte.add(new PdfText(154, y, 10, eintrag.name() + ", " + eintrag.vorname()));
+            texte.add(new PdfText(154, y, 10, eintrag.vorname() + " " + eintrag.name()));
             y -= 18;
             position++;
         }

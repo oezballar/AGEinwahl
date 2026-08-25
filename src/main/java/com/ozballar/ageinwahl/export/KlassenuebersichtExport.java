@@ -172,7 +172,7 @@ public class KlassenuebersichtExport extends AbstractPdfExport {
                 y = klassenuebersichtKopf(texte, klasse, true);
             }
 
-            addText(texte, nameX, y, 9, eintrag.name() + ", " + eintrag.vorname());
+            addText(texte, nameX, y, 9, eintrag.vorname() + " " + eintrag.name());
             for (int spalte = 0; spalte < agSpalten; spalte++) {
                 int x = ersteAgX + spalte * agSpaltenBreite;
                 int agY = y;

@@ -5,7 +5,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,10 +181,12 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
     }
 
     private void ersetzeVariablen(XWPFDocument dokument, Teilnehmer kind, List<BelegteAg> belegteAgs) {
-        Map<Ag.Wochentag, BelegteAg> agNachTag = belegteAgs.stream()
-                .collect(Collectors.toMap(BelegteAg::wochentag, ag -> ag, (erste, zweite) ->
-                        new BelegteAg(erste.wochentag(), erste.titel() + " / " + zweite.titel(),
-                                erste.material() + " / " + zweite.material())));
+        Map<Ag.Wochentag, List<BelegteAg>> agsNachTag = belegteAgs.stream()
+                .collect(Collectors.groupingBy(
+                        BelegteAg::wochentag,
+                        () -> new EnumMap<>(Ag.Wochentag.class),
+                        Collectors.toList()
+                ));
         List<Ag.Wochentag> tage = jahrgang(kind) <= 2
                 ? List.of(Ag.Wochentag.MONTAG, Ag.Wochentag.DIENSTAG, Ag.Wochentag.MITTWOCH, Ag.Wochentag.DONNERSTAG, Ag.Wochentag.FREITAG)
                 : List.of(Ag.Wochentag.DIENSTAG, Ag.Wochentag.MITTWOCH);
@@ -191,8 +195,10 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
                 "Vorname", kind.vorname(),
                 "Nachname", kind.name()
         );
+        List<XWPFParagraph> zuEntfernendeParagraphen = new ArrayList<>();
         int[] tagIndex = {0};
         for (XWPFParagraph paragraph : dokument.getParagraphs()) {
+            boolean paragraphEntfernen = false;
             for (XWPFRun run : paragraph.getRuns()) {
                 String text = run.getText(0);
                 if (text == null) {
@@ -205,22 +211,59 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
                     String variable = matcher.group(1);
                     String wert = einfacheVariablen.get(variable);
                     if ("AG Name".equals(variable) || "Material".equals(variable)) {
-                        BelegteAg ag = agNachTag.get(tage.get(Math.min(tagIndex[0], tage.size() - 1)));
-                        wert = ag == null ? "-" : "AG Name".equals(variable) ? ag.titel() : ag.material();
+                        List<BelegteAg> ags = agsNachTag.getOrDefault(tage.get(Math.min(tagIndex[0], tage.size() - 1)), List.of());
+                        wert = "AG Name".equals(variable) ? agTitelText(ags) : materialText(ags);
                         if ("Material".equals(variable)) {
+                            paragraphEntfernen = wert.isBlank();
                             tagIndex[0]++;
                         }
                     }
                     matcher.appendReplacement(ersetzt, Matcher.quoteReplacement(wert == null ? "-" : wert));
                 }
                 matcher.appendTail(ersetzt);
-                run.setText(ersetzt.toString(), 0);
+                setzeText(run, ersetzt.toString());
+            }
+            if (paragraphEntfernen) {
+                zuEntfernendeParagraphen.add(paragraph);
+            }
+        }
+        for (XWPFParagraph paragraph : zuEntfernendeParagraphen) {
+            int position = dokument.getPosOfParagraph(paragraph);
+            if (position >= 0) {
+                dokument.removeBodyElement(position);
             }
         }
     }
 
+    private String agTitelText(List<BelegteAg> ags) {
+        if (ags.isEmpty()) {
+            return "-";
+        }
+        String text = ags.stream()
+                .map(BelegteAg::titel)
+                .filter(titel -> titel != null && !titel.isBlank())
+                .collect(Collectors.joining("\n"));
+        return text.isBlank() ? "-" : text;
+    }
+
+    private String materialText(List<BelegteAg> ags) {
+        return ags.stream()
+                .map(BelegteAg::material)
+                .filter(material -> material != null && !material.isBlank())
+                .collect(Collectors.joining("\n"));
+    }
+
+    private void setzeText(XWPFRun run, String text) {
+        String[] zeilen = text.split("\\R", -1);
+        run.setText(zeilen[0], 0);
+        for (int index = 1; index < zeilen.length; index++) {
+            run.addBreak();
+            run.setText(zeilen[index]);
+        }
+    }
+
     private void konvertiereZuPdf(Path docx, Path arbeitsverzeichnis) throws IOException {
-        String kommando = System.getProperty("ageinwahl.libreoffice", "libreoffice");
+        String kommando = findeLibreOfficeKommando();
         Path profil = arbeitsverzeichnis.resolve("libreoffice-profile");
         Files.createDirectories(profil);
         Process prozess = new ProcessBuilder(kommando, "-env:UserInstallation=" + profil.toUri(), "--headless", "--convert-to", "pdf:writer_pdf_Export",
@@ -239,6 +282,37 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
             Thread.currentThread().interrupt();
             throw new IOException("Die PDF-Konvertierung wurde unterbrochen.", ex);
         }
+    }
+
+    private String findeLibreOfficeKommando() throws IOException {
+        String konfiguriert = System.getProperty("ageinwahl.libreoffice");
+        if (konfiguriert != null && !konfiguriert.isBlank()) {
+            return konfiguriert;
+        }
+
+        boolean windows = System.getProperty("os.name", "").toLowerCase().contains("win");
+        List<String> kandidaten = new ArrayList<>();
+        if (windows) {
+            kandidaten.add(System.getenv("ProgramFiles") + "\\LibreOffice\\program\\soffice.exe");
+            kandidaten.add(System.getenv("ProgramFiles(x86)") + "\\LibreOffice\\program\\soffice.exe");
+            kandidaten.add("soffice.exe");
+            kandidaten.add("libreoffice.exe");
+        } else {
+            kandidaten.add("libreoffice");
+            kandidaten.add("soffice");
+        }
+
+        for (String kandidat : kandidaten) {
+            if (kandidat != null && !kandidat.equals("null")
+                    && (kandidat.indexOf('\\') >= 0 || kandidat.indexOf('/') >= 0
+                    ? Files.isRegularFile(Path.of(kandidat))
+                    : true)) {
+                return kandidat;
+            }
+        }
+
+        throw new IOException("LibreOffice wurde nicht gefunden. Bitte LibreOffice installieren "
+                + "oder den Pfad mit -Dageinwahl.libreoffice angeben.");
     }
 
     private Map<Integer, List<BelegteAg>> belegteAgsNachTeilnehmer(Map<String, Ag> agNachTitel) {
@@ -260,7 +334,7 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
         Ag ag = agNachTitel.get(titel);
         if (ag != null) {
             ergebnis.computeIfAbsent(teilnehmerId, id -> new java.util.ArrayList<>())
-                    .add(new BelegteAg(ag.wochentag(), ag.titel(), ag.material() == null || ag.material().isBlank() ? "-" : ag.material()));
+                    .add(new BelegteAg(ag.wochentag(), ag.titel(), ag.material() == null ? "" : ag.material().strip()));
         }
     }
 
