@@ -195,6 +195,7 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
                 "Vorname", kind.vorname(),
                 "Nachname", kind.name()
         );
+        List<Ag.Wochentag> angezeigteTage = entferneLeereTageUndFussnoten(dokument, tage, agsNachTag);
         List<XWPFParagraph> zuEntfernendeParagraphen = new ArrayList<>();
         int[] tagIndex = {0};
         for (XWPFParagraph paragraph : dokument.getParagraphs()) {
@@ -211,7 +212,7 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
                     String variable = matcher.group(1);
                     String wert = einfacheVariablen.get(variable);
                     if ("AG Name".equals(variable) || "Material".equals(variable)) {
-                        List<BelegteAg> ags = agsNachTag.getOrDefault(tage.get(Math.min(tagIndex[0], tage.size() - 1)), List.of());
+                        List<BelegteAg> ags = agsNachTag.getOrDefault(angezeigteTage.get(Math.min(tagIndex[0], angezeigteTage.size() - 1)), List.of());
                         wert = "AG Name".equals(variable) ? agTitelText(ags) : materialText(ags);
                         if ("Material".equals(variable)) {
                             paragraphEntfernen = wert.isBlank();
@@ -230,6 +231,92 @@ public class RueckmeldezettelExport extends AbstractPdfExport {
         for (XWPFParagraph paragraph : zuEntfernendeParagraphen) {
             int position = dokument.getPosOfParagraph(paragraph);
             if (position >= 0) {
+                dokument.removeBodyElement(position);
+            }
+        }
+    }
+
+    private List<Ag.Wochentag> entferneLeereTageUndFussnoten(
+            XWPFDocument dokument,
+            List<Ag.Wochentag> tage,
+            Map<Ag.Wochentag, List<BelegteAg>> agsNachTag
+    ) {
+        List<Ag.Wochentag> angezeigteTage = new ArrayList<>();
+        List<int[]> zuEntfernendeBereiche = new ArrayList<>();
+        List<org.apache.poi.xwpf.usermodel.IBodyElement> elemente = dokument.getBodyElements();
+        int tagIndex = 0;
+        for (int index = 0; index < elemente.size() && tagIndex < tage.size(); index++) {
+            if (!(elemente.get(index) instanceof XWPFParagraph paragraph)
+                    || !paragraph.getText().contains("{{AG Name}}")) {
+                continue;
+            }
+
+            Ag.Wochentag tag = tage.get(tagIndex++);
+            if (agsNachTag.getOrDefault(tag, List.of()).isEmpty()) {
+                zuEntfernendeBereiche.add(new int[]{
+                        tagesblockStart(elemente, index),
+                        tagesblockEnde(elemente, index)
+                });
+            } else {
+                angezeigteTage.add(tag);
+            }
+        }
+
+        entferneBereiche(dokument, zuEntfernendeBereiche);
+        entferneFussnotenAusKoerper(dokument);
+        return angezeigteTage.isEmpty() ? tage.subList(0, 1) : angezeigteTage;
+    }
+
+    private int tagesblockStart(List<org.apache.poi.xwpf.usermodel.IBodyElement> elemente, int agNameIndex) {
+        for (int index = agNameIndex - 1; index >= 0; index--) {
+            if (elemente.get(index) instanceof XWPFParagraph paragraph && !paragraph.getText().isBlank()) {
+                return index;
+            }
+        }
+        return agNameIndex;
+    }
+
+    private int tagesblockEnde(List<org.apache.poi.xwpf.usermodel.IBodyElement> elemente, int agNameIndex) {
+        int ende = agNameIndex;
+        for (int index = agNameIndex + 1; index < elemente.size(); index++) {
+            if (elemente.get(index) instanceof XWPFParagraph paragraph
+                    && paragraph.getText().contains("{{Material}}")) {
+                ende = index;
+                break;
+            }
+        }
+        for (int index = ende + 1; index < elemente.size(); index++) {
+            if (elemente.get(index) instanceof XWPFParagraph paragraph && paragraph.getText().isBlank()) {
+                ende = index;
+            } else {
+                break;
+            }
+        }
+        return ende;
+    }
+
+    private void entferneFussnotenAusKoerper(XWPFDocument dokument) {
+        List<org.apache.poi.xwpf.usermodel.IBodyElement> elemente = dokument.getBodyElements();
+        List<int[]> zuEntfernendeBereiche = new ArrayList<>();
+        for (int index = 0; index < elemente.size(); index++) {
+            if (elemente.get(index) instanceof XWPFParagraph paragraph
+                    && paragraph.getText().stripLeading().startsWith("*")) {
+                int start = index;
+                while (start > 0
+                        && elemente.get(start - 1) instanceof XWPFParagraph vorher
+                        && vorher.getText().isBlank()) {
+                    start--;
+                }
+                zuEntfernendeBereiche.add(new int[]{start, index});
+            }
+        }
+        entferneBereiche(dokument, zuEntfernendeBereiche);
+    }
+
+    private void entferneBereiche(XWPFDocument dokument, List<int[]> bereiche) {
+        for (int index = bereiche.size() - 1; index >= 0; index--) {
+            int[] bereich = bereiche.get(index);
+            for (int position = bereich[1]; position >= bereich[0]; position--) {
                 dokument.removeBodyElement(position);
             }
         }
