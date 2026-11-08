@@ -26,7 +26,16 @@
         </div>
     </section>
 
+    <p th:if="${exportFehler}" th:text="${exportFehler}" role="alert"></p>
+
     <section class="export-grid">
+        <article class="export-card">
+            <div>
+                <h2>Rückmeldezettel für Entdeckerangebote</h2>
+                <p>Eine DIN-A4-Seite je Kind mit mindestens einem zugewiesenen Entdeckerangebot, mit den Angeboten am Montag und Freitag und benötigten Materialien.</p>
+            </div>
+            <a class="button primary" th:href="@{/exports/entdecker-rueckmeldezettel.pdf}">PDF erstellen</a>
+        </article>
         <article class="export-card">
             <div>
                 <h2>AG-Teilnehmerlisten</h2>

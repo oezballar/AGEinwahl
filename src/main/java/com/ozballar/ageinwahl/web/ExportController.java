@@ -4,14 +4,18 @@ import java.util.stream.StreamSupport;
 
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.ozballar.ageinwahl.export.AgTeilnehmerlistenExport;
+import com.ozballar.ageinwahl.export.EntdeckerRueckmeldezettelExport;
 import com.ozballar.ageinwahl.export.AgWartelistenExport;
 import com.ozballar.ageinwahl.export.KlassenuebersichtExport;
 import com.ozballar.ageinwahl.export.RueckmeldezettelExport;
@@ -34,6 +38,7 @@ public class ExportController {
     private final TeilnehmerStundenplanExport teilnehmerStundenplanExport;
     private final RueckmeldezettelExport rueckmeldezettelExport;
     private final ExcelImportService excelImportService;
+    private final EntdeckerRueckmeldezettelExport entdeckerRueckmeldezettelExport;
 
     public ExportController(
             AgService agService,
@@ -44,7 +49,8 @@ public class ExportController {
             KlassenuebersichtExport klassenuebersichtExport,
             TeilnehmerStundenplanExport teilnehmerStundenplanExport,
             RueckmeldezettelExport rueckmeldezettelExport,
-            ExcelImportService excelImportService
+            ExcelImportService excelImportService,
+            EntdeckerRueckmeldezettelExport entdeckerRueckmeldezettelExport
     ) {
         this.agService = agService;
         this.teilnehmerService = teilnehmerService;
@@ -55,6 +61,7 @@ public class ExportController {
         this.teilnehmerStundenplanExport = teilnehmerStundenplanExport;
         this.rueckmeldezettelExport = rueckmeldezettelExport;
         this.excelImportService = excelImportService;
+        this.entdeckerRueckmeldezettelExport = entdeckerRueckmeldezettelExport;
     }
 
     @GetMapping
@@ -112,6 +119,21 @@ public class ExportController {
     @GetMapping("/entdeckerangebote.xlsx")
     public ResponseEntity<byte[]> entdeckerangebote() {
         return excelAntwort(excelImportService.exportiereEntdeckerangebote(), "entdeckerangebote.xlsx");
+    }
+
+    @GetMapping("/entdecker-rueckmeldezettel.pdf")
+    public ResponseEntity<byte[]> entdeckerRueckmeldezettel() {
+        return pdfAntwort(entdeckerRueckmeldezettelExport.erstellen(), "entdecker-rueckmeldezettel.pdf");
+    }
+
+    @ExceptionHandler(EntdeckerRueckmeldezettelExport.ExportFehler.class)
+    public ModelAndView entdeckerExportFehler(EntdeckerRueckmeldezettelExport.ExportFehler fehler) {
+        ModelAndView view = new ModelAndView("exports/index");
+        view.setStatus(HttpStatus.UNPROCESSABLE_ENTITY);
+        view.addObject("agAnzahl", anzahl(agService.findeAlle()));
+        view.addObject("teilnehmerAnzahl", anzahl(teilnehmerService.findeAlle()));
+        view.addObject("exportFehler", fehler.getMessage());
+        return view;
     }
 
     private ResponseEntity<byte[]> pdfAntwort(byte[] pdf, String dateiname) {

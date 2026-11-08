@@ -4,8 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.containsString;
 
 import java.nio.charset.Charset;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.ozballar.ageinwahl.export.EntdeckerBriefVorlage;
+import static org.mockito.Mockito.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
@@ -21,6 +25,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -32,6 +40,9 @@ import com.ozballar.ageinwahl.service.TeilnehmerService;
 
 @SpringBootTest
 class ExportControllerTests {
+
+    @MockitoBean
+    private EntdeckerBriefVorlage entdeckerVorlage;
 
     @Autowired
     private ExportController exportController;
@@ -45,6 +56,9 @@ class ExportControllerTests {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private WebApplicationContext webContext;
+
     @BeforeEach
     void setUp() {
         leereDatenbank();
@@ -53,6 +67,53 @@ class ExportControllerTests {
     @AfterEach
     void tearDown() {
         leereDatenbank();
+    }
+
+    @Test
+    void entdeckerRueckmeldezettelIstAlsPdfDownloadErreichbar() throws Exception {
+        Ag ag = agService.speichern(new Ag(null, Ag.Wochentag.FREITAG, Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.ENTDECKERANGEBOT, "Töpfern", "", "Schürze", "Frau Beispiel", "Werkraum", 12,
+                List.of(new ErlaubterJahrgang(2))));
+        Teilnehmer kind = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Müller", "2a"));
+        jdbcTemplate.update("UPDATE einwahl_entdeckerangebot SET auswahl = 'NEIN', zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?",
+                kind.id(), ag.titel());
+        when(entdeckerVorlage.erstellen(any(), any(), any(), any(), any())).thenReturn(new byte[]{1});
+        when(entdeckerVorlage.zuPdf(any(), eq(1))).thenReturn("%PDF-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        var mvc = MockMvcBuilders.webAppContextSetup(webContext).build();
+        var result = mvc.perform(get("/exports/entdecker-rueckmeldezettel.pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"entdecker-rueckmeldezettel.pdf\""))
+                .andReturn();
+        assertEquals("%PDF-test", result.getResponse().getContentAsString());
+        verify(entdeckerVorlage).zuPdf(any(), eq(1));
+    }
+
+    @Test
+    void entdeckerRueckmeldezettelZeigtFachlicheFehlerInExportuebersicht() throws Exception {
+        Ag ag = agService.speichern(new Ag(null, Ag.Wochentag.DIENSTAG, Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.ENTDECKERANGEBOT, "Forschen", "", "Frau Beispiel", "Werkraum", 12,
+                List.of(new ErlaubterJahrgang(2))));
+        Teilnehmer kind = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Müller", "2a"));
+        jdbcTemplate.update("UPDATE einwahl_entdeckerangebot SET zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?",
+                kind.id(), ag.titel());
+        MockMvcBuilders.webAppContextSetup(webContext).build()
+                .perform(get("/exports/entdecker-rueckmeldezettel.pdf"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(view().name("exports/index"))
+                .andExpect(model().attributeExists("exportFehler", "agAnzahl", "teilnehmerAnzahl"))
+                .andExpect(content().string(containsString("außerhalb von Montag und Freitag")))
+                .andExpect(header().doesNotExist(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
+    void exportuebersichtEnthaeltBeideRueckmeldezettelDownloads() throws Exception {
+        MockMvcBuilders.webAppContextSetup(webContext).build()
+                .perform(get("/exports"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/exports/entdecker-rueckmeldezettel.pdf\"")))
+                .andExpect(content().string(containsString("href=\"/exports/rueckmeldezettel.pdf\"")));
     }
 
     @Test
