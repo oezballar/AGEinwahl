@@ -174,6 +174,28 @@ public class TeilnehmerController {
         return excelDownload("teilnehmer-import-vorlage.xlsx", excelImportService.teilnehmerVorlage());
     }
 
+    @GetMapping("/besuchte-ags-importieren")
+    public String besuchteAgsImportieren() {
+        return "teilnehmer/import";
+    }
+
+    @PostMapping("/besuchte-ags-importieren")
+    public String besuchteAgsImportieren(@RequestParam("datei") MultipartFile datei, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            int anzahl = excelImportService.importiereBesuchteAgs(datei);
+            redirectAttributes.addFlashAttribute("erfolg", "Besuchte AGs für " + anzahl + " Teilnehmer wurden importiert.");
+            return "redirect:/teilnehmer";
+        } catch (ExcelImportException | DataIntegrityViolationException ex) {
+            model.addAttribute("fehler", ex.getMessage());
+            return "teilnehmer/import";
+        }
+    }
+
+    @GetMapping("/besuchte-ags-vorlage.xlsx")
+    public ResponseEntity<byte[]> besuchteAgsVorlage() {
+        return excelDownload("besuchte-ags-vorlage.xlsx", excelImportService.besuchteAgsVorlage());
+    }
+
     private TeilnehmerEintrag teilnehmerEintrag(
             Teilnehmer teilnehmer,
             List<EinwahlEntdeckerangebot> entdeckerEinwahlen,

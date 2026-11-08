@@ -27,11 +27,20 @@ public record AgeinwahlDatei(
             Ag.Kategorie kategorie,
             String titel,
             String beschreibung,
+            String material,
             String verantwortlicher,
             String ort,
             Integer maximaleTeilnehmerzahl,
             List<Integer> erlaubteJahrgaenge
     ) {
+        public AgEintrag(
+                Integer id, Ag.Wochentag wochentag, Ag.Zeit zeit, Ag.Kategorie kategorie,
+                String titel, String beschreibung, String verantwortlicher, String ort,
+                Integer maximaleTeilnehmerzahl, List<Integer> erlaubteJahrgaenge
+        ) {
+            this(id, wochentag, zeit, kategorie, titel, beschreibung, null, verantwortlicher, ort,
+                    maximaleTeilnehmerzahl, erlaubteJahrgaenge);
+        }
     }
 
     public record TeilnehmerEintrag(

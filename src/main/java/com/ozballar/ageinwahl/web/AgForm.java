@@ -14,6 +14,7 @@ public class AgForm {
     private Ag.Kategorie kategorie;
     private String titel;
     private String beschreibung;
+    private String material;
     private String verantwortlicher;
     private String ort;
     private Integer maximaleTeilnehmerzahl;
@@ -27,6 +28,7 @@ public class AgForm {
         form.setKategorie(ag.kategorie());
         form.setTitel(ag.titel());
         form.setBeschreibung(ag.beschreibung());
+        form.setMaterial(ag.material());
         form.setVerantwortlicher(ag.verantwortlicher());
         form.setOrt(ag.ort());
         form.setMaximaleTeilnehmerzahl(ag.maximaleTeilnehmerzahl());
@@ -44,6 +46,7 @@ public class AgForm {
                 kategorie,
                 titel,
                 beschreibung,
+                material,
                 verantwortlicher,
                 ort,
                 maximaleTeilnehmerzahl,
@@ -99,6 +102,14 @@ public class AgForm {
 
     public void setBeschreibung(String beschreibung) {
         this.beschreibung = beschreibung;
+    }
+
+    public String getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(String material) {
+        this.material = material;
     }
 
     public String getVerantwortlicher() {

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuweisungen</title>
+    <link rel="stylesheet" th:href="@{/css/app.css?v=20260823-matrix-sticky}">
+</head>
+<body>
+<aside class="sidebar">
+    <a class="brand" th:href="@{/}">AG-Einwahl</a>
+    <nav class="nav">
+        <a class="nav-link" th:href="@{/}">Übersicht</a>
+        <a class="nav-link" th:href="@{/ags}">AGs</a>
+        <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link active" th:href="@{/zuweisungen}">Zuweisungen</a>
+        <a class="nav-link" th:href="@{/exports}">Exports</a>
+    </nav>
+</aside>
+
+<main class="page">
+    <section class="page-heading">
+        <div>
+            <h1>Zuweisungen</h1>
+            <p>Übersicht der Einwahlen und aktuellen Zuweisungen.</p>
+        </div>
+        <div class="page-actions">
+            <a class="button primary" th:href="@{/teilnehmer}">Teilnehmer bearbeiten</a>
+        </div>
+    </section>
+
+    <section class="metric-grid">
+        <article class="metric">
+            <span>Teilnehmer</span>
+            <strong th:text="${anzahlTeilnehmer}">0</strong>
+        </article>
+        <article class="metric">
+            <span>Zuweisungen</span>
+            <strong th:text="${anzahlZuweisungen}">0</strong>
+        </article>
+        <article class="metric warning" th:classappend="${offeneZuweisungen == 0} ? ' quiet'">
+            <span>Offene Zuweisungen</span>
+            <strong th:text="${offeneZuweisungen}">0</strong>
+        </article>
+        <article class="metric danger" th:classappend="${#lists.isEmpty(ueberbelegteAgs)} ? ' quiet'">
+            <span>Überbelegte AGs</span>
+            <strong th:text="${#lists.size(ueberbelegteAgs)}">0</strong>
+        </article>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="matrix-heading">
+            <div>
+                <h2>Einwahlmatrix für Nachmittags-AGs</h2>
+                <p>Die Matrix zeigt, welche AG jedes Kind mit welcher Priorität gewählt hat. Ein Strich bedeutet, dass keine Priorität angegeben wurde.</p>
+            </div>
+        </div>
+        <div th:each="tag : ${matrix.tage()}">
+            <h3 th:text="${tag.wochentag()}">Montag</h3>
+            <div class="table-section">
+                <form method="post" th:action="@{/zuweisungen/zuweisen}">
+                    <input type="hidden" name="wochentag" th:value="${tag.wochentag().toUpperCase()}">
+                    <div class="matrix-scroll">
+                    <table class="assignment-matrix">
+                        <thead>
+                        <tr>
+                            <th>AG</th>
+                            <th th:each="teilnehmerId : ${tag.teilnehmerIds()}"
+                                th:text="${teilnehmerNamen.get(teilnehmerId)}">Vorname Nachname</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="zeile : ${tag.zeilen()}">
+                            <th th:class="${zeile.ueberbelegt()} ? 'overbooked-text' : ''">
+                                <span th:text="${zeile.agTitel()}">AG</span><br>
+                                <span th:text="|${zeile.belegtePlaetze()} / ${zeile.maximaleTeilnehmerzahl()}|">0 / 0</span>
+                            </th>
+                            <td th:each="teilnehmerId : ${tag.teilnehmerIds()}" class="matrix-cell">
+                                <span class="matrix-priority"
+                                      th:text="${zeile.prioritaeten().get(teilnehmerId) == null ? '-' : zeile.prioritaeten().get(teilnehmerId)}">-</span>
+                                <input class="matrix-assignment" type="radio"
+                                       th:if="${zeile.einwahlIds().get(teilnehmerId) != null}"
+                                       th:name="|teilnehmer_${teilnehmerId}|"
+                                       th:value="${zeile.einwahlIds().get(teilnehmerId)}"
+                                       th:checked="${zeile.zugewieseneEinwahlIds().get(teilnehmerId) != null}"
+                                       th:attr="aria-label='Zuweisung für ' + ${teilnehmerNamen.get(teilnehmerId)} + ': ' + ${zeile.agTitel()}"
+                                       onchange="this.form.submit()">
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p class="empty" th:if="${#lists.isEmpty(matrix.tage())}">Es liegen noch keine Nachmittags-Einwahlen vor.</p>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="matrix-heading">
+            <div>
+                <h2>Einwahlmatrix für Entdeckerangebote</h2>
+                <p>Die Matrix zeigt, bei welchen Entdeckerangeboten jedes Kind mit Ja oder Nein abgestimmt hat.</p>
+            </div>
+        </div>
+        <div th:each="tag : ${entdeckerMatrix.tage()}">
+            <h3 th:text="${tag.wochentag()}">Montag</h3>
+            <div class="table-section">
+                <form method="post" th:action="@{/zuweisungen/entdecker-zuweisen}">
+                    <input type="hidden" name="wochentag" th:value="${tag.wochentag().toUpperCase()}">
+                <div class="matrix-scroll">
+                    <table class="assignment-matrix">
+                        <thead>
+                        <tr>
+                            <th>AG</th>
+                            <th th:each="teilnehmerId : ${tag.teilnehmerIds()}"
+                                th:text="${teilnehmerNamen.get(teilnehmerId)}">Vorname Nachname</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="zeile : ${tag.zeilen()}">
+                            <th th:class="${zeile.ueberbelegt()} ? 'overbooked-text' : ''">
+                                <span th:text="${zeile.agTitel()}">Entdeckerangebot</span>
+                                <br>
+                                <span th:text="|JA: ${zeile.interessenten()}|">JA: 0</span>
+                                <br>
+                                <span th:text="|${zeile.belegtePlaetze()} / ${zeile.maximaleTeilnehmerzahl()}|">0 / 0</span>
+                            </th>
+                            <td th:each="teilnehmerId : ${tag.teilnehmerIds()}" class="matrix-cell">
+                                <span class="matrix-choice"
+                                      th:text="${zeile.auswahlen().get(teilnehmerId) == null ? '-' : (zeile.auswahlen().get(teilnehmerId).name() == 'JA' ? 'Ja' : 'Nein')}">-</span>
+                                <input class="matrix-assignment" type="radio"
+                                       th:if="${zeile.einwahlIds().get(teilnehmerId) != null}"
+                                       th:name="|teilnehmer_${teilnehmerId}|"
+                                       th:value="${zeile.einwahlIds().get(teilnehmerId)}"
+                                       th:checked="${zeile.zugewieseneEinwahlIds().get(teilnehmerId) != null}"
+                                       th:attr="aria-label='Zuweisung für ' + ${teilnehmerNamen.get(teilnehmerId)} + ': ' + ${zeile.agTitel()}"
+                                       onchange="this.form.submit()">
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                </form>
+            </div>
+        </div>
+        <p class="empty" th:if="${#lists.isEmpty(entdeckerMatrix.tage())}">Es liegen noch keine Einwahlen für Entdeckerangebote vor.</p>
+    </section>
+
+</main>
+</body>
+</html>

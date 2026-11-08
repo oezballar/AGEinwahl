@@ -6,6 +6,8 @@ Fuer das Erstellen des Windows-Pakets wird ein **JDK 19** benoetigt. Eine reine 
 
 Der Laptop, auf dem die Anwendung spaeter genutzt wird, benoetigt danach keine Java-Installation mehr. Das JDK bringt die benoetigte Laufzeit in das Paket ein.
 
+Fuer den Export der personalisierten Rueckmeldezettel muss zusaetzlich **LibreOffice** installiert sein. Unter Windows wird dafuer `soffice.exe` verwendet. Eine Standardinstallation von LibreOffice wird automatisch gefunden.
+
 ## Paket von Linux aus bauen
 
 Ein Windows-App-Image kann nicht direkt mit `jpackage` unter Linux erzeugt werden. Das Projekt enthaelt deshalb den manuellen GitHub-Actions-Workflow `Windows-Paket bauen`.

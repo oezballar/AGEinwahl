@@ -13,6 +13,7 @@
         <a class="nav-link" th:href="@{/}">Übersicht</a>
         <a class="nav-link" th:href="@{/ags}">AGs</a>
         <a class="nav-link" th:href="@{/teilnehmer}">Teilnehmer</a>
+        <a class="nav-link" th:href="@{/zuweisungen}">Zuweisungen</a>
         <a class="nav-link active" th:href="@{/exports}">Exports</a>
     </nav>
 </aside>
@@ -38,6 +39,14 @@
 
         <article class="export-card">
             <div>
+                <h2>AG-Wartelisten</h2>
+                <p>Kinder mit Priorität 1, die dieser AG nicht zugewiesen wurden, sortiert nach AG.</p>
+            </div>
+            <a class="button primary" th:href="@{/exports/ag-wartelisten.pdf}">PDF erstellen</a>
+        </article>
+
+        <article class="export-card">
+            <div>
                 <h2>Wunschzettel</h2>
                 <p th:text="'Personalisierte Wunschzettel zum Ausschneiden, zwei pro DIN-A4-Seite. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
                     Personalisierte Wunschzettel zum Ausschneiden.
@@ -58,12 +67,20 @@
 
         <article class="export-card">
             <div>
-                <h2>Stundenpläne für Kinder</h2>
-                <p th:text="'Stundenplan mit den belegten AGs, zwei Kinder pro DIN-A4-Seite. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
-                    Stundenpläne mit den belegten AGs.
+                <h2>Rückmeldezettel für Kinder</h2>
+                <p th:text="'Personalisierte Rückmeldezettel mit den zugewiesenen AGs und benötigten Materialien. Enthaltene Teilnehmer: ' + ${teilnehmerAnzahl}">
+                    Personalisierte Rückmeldezettel für die Kinder.
                 </p>
             </div>
-            <a class="button primary" th:href="@{/exports/teilnehmer-stundenplaene.pdf}">PDF erstellen</a>
+            <a class="button primary" th:href="@{/exports/rueckmeldezettel.pdf}">PDF erstellen</a>
+        </article>
+
+        <article class="export-card">
+            <div>
+                <h2>Interesse an Entdeckerangeboten</h2>
+                <p>Eine Spalte je Entdeckerangebot mit den Kindern und Klassen, die ihr Interesse mit JA bekundet haben.</p>
+            </div>
+            <a class="button primary" th:href="@{/exports/entdeckerangebote.xlsx}">Excel herunterladen</a>
         </article>
     </section>
 </main>

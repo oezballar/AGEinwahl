@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -82,6 +83,34 @@ public class EinwahlEntdeckerangebotService {
                 einwahl.auswahl(),
                 zugewiesen
         ));
+    }
+
+    public void speichereZuweisung(Integer teilnehmerId, Ag.Wochentag wochentag, Integer zugewieseneEinwahlId) {
+        Map<String, Ag> agNachTitel = StreamSupport.stream(agRepository.findAll().spliterator(), false)
+                .collect(Collectors.toMap(Ag::titel, ag -> ag));
+        List<EinwahlEntdeckerangebot> einwahlenAmTag = StreamSupport.stream(einwahlEntdeckerangebotRepository.findAll().spliterator(), false)
+                .filter(einwahl -> Objects.equals(einwahl.teilnehmerId(), teilnehmerId))
+                .filter(einwahl -> agNachTitel.containsKey(einwahl.agTitel()))
+                .filter(einwahl -> agNachTitel.get(einwahl.agTitel()).wochentag() == wochentag)
+                .toList();
+
+        if (zugewieseneEinwahlId == null) {
+            throw new IllegalArgumentException("Bei den Entdeckerangeboten muss fuer " + wochentag.name() + " ein Angebot zugewiesen sein.");
+        }
+
+        boolean einwahlIstInGruppe = einwahlenAmTag.stream()
+                .anyMatch(einwahl -> Objects.equals(einwahl.id(), zugewieseneEinwahlId));
+        if (!einwahlIstInGruppe) {
+            throw new IllegalArgumentException("Das zugewiesene Entdeckerangebot gehoert nicht zum ausgewaehlten Wochentag.");
+        }
+
+        einwahlenAmTag.forEach(einwahl -> einwahlEntdeckerangebotRepository.save(new EinwahlEntdeckerangebot(
+                einwahl.id(),
+                einwahl.teilnehmerId(),
+                einwahl.agTitel(),
+                einwahl.auswahl(),
+                Objects.equals(einwahl.id(), zugewieseneEinwahlId)
+        )));
     }
 
     private void erstelleEintragWennErlaubtUndNochNichtVorhanden(Teilnehmer teilnehmer, Ag ag) {

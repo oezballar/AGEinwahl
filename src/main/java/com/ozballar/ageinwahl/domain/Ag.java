@@ -15,12 +15,22 @@ public record Ag(
         Kategorie kategorie,
         String titel,
         String beschreibung,
+        String material,
         String verantwortlicher,
         String ort,
         Integer maximaleTeilnehmerzahl,
         @MappedCollection(idColumn = "AG_ID", keyColumn = "POSITION")
         List<ErlaubterJahrgang> erlaubteJahrgaenge
 ) {
+
+    public Ag(
+            Integer id, Wochentag wochentag, Zeit zeit, Kategorie kategorie, String titel,
+            String beschreibung, String verantwortlicher, String ort, Integer maximaleTeilnehmerzahl,
+            List<ErlaubterJahrgang> erlaubteJahrgaenge
+    ) {
+        this(id, wochentag, zeit, kategorie, titel, beschreibung, null, verantwortlicher, ort,
+                maximaleTeilnehmerzahl, erlaubteJahrgaenge);
+    }
 
     public Ag {
         if (erlaubteJahrgaenge != null && erlaubteJahrgaenge.stream().anyMatch(jahrgang -> jahrgang == null || jahrgang.jahrgang() == null)) {

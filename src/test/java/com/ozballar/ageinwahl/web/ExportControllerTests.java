@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.ozballar.ageinwahl.domain.Ag;
 import com.ozballar.ageinwahl.domain.ErlaubterJahrgang;
@@ -202,6 +204,95 @@ class ExportControllerTests {
         assertTrue(inhalt.contains("(Nicht belegt) Tj"));
         assertEquals("attachment; filename=\"teilnehmer-stundenplaene.pdf\"",
                 exportController.teilnehmerStundenplaene().getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
+    void wartelisteEnthaeltNichtZugewiesenePrioritaetEins() {
+        Ag wartelistenAg = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.AG,
+                "Fußball",
+                "",
+                "Frau Beispiel",
+                "Sportplatz",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Ag zugewieseneAg = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.NACHMITTAG,
+                Ag.Kategorie.AG,
+                "Naturfreunde",
+                "",
+                "Herr Beispiel",
+                "Garten",
+                12,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Teilnehmer ada = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Lovelace", "3a"));
+        Teilnehmer grace = teilnehmerService.speichern(new Teilnehmer(null, "Grace", "Hopper", "3a"));
+        jdbcTemplate.update("UPDATE einwahl_ag SET auswahl = 1 WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), wartelistenAg.titel());
+        jdbcTemplate.update("UPDATE einwahl_ag SET auswahl = 1, zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", grace.id(), wartelistenAg.titel());
+        jdbcTemplate.update("UPDATE einwahl_ag SET zugewiesen = TRUE WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), zugewieseneAg.titel());
+
+        byte[] pdf = exportController.agWartelisten().getBody();
+
+        assertNotNull(pdf);
+        String inhalt = new String(pdf, Charset.forName("windows-1252"));
+        assertTrue(inhalt.contains("(AG-Warteliste) Tj"));
+        assertTrue(inhalt.contains("(AG: Fußball) Tj"));
+        assertTrue(inhalt.contains("(Lovelace, Ada) Tj"));
+        assertFalse(inhalt.contains("Hopper, Grace"));
+        assertEquals("attachment; filename=\"ag-wartelisten.pdf\"",
+                exportController.agWartelisten().getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
+    void entdeckerangeboteExportiertInteressentenJeAngebotAlsSpalten() throws IOException {
+        Ag angebotA = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.VORMITTAG,
+                Ag.Kategorie.ENTDECKERANGEBOT,
+                "Forscher",
+                "",
+                "Frau Beispiel",
+                "Raum 1",
+                20,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Ag angebotB = agService.speichern(new Ag(
+                null,
+                Ag.Wochentag.MONTAG,
+                Ag.Zeit.VORMITTAG,
+                Ag.Kategorie.ENTDECKERANGEBOT,
+                "Kreativ",
+                "",
+                "Herr Beispiel",
+                "Raum 2",
+                20,
+                List.of(new ErlaubterJahrgang(3))
+        ));
+        Teilnehmer ada = teilnehmerService.speichern(new Teilnehmer(null, "Ada", "Lovelace", "3a"));
+        Teilnehmer grace = teilnehmerService.speichern(new Teilnehmer(null, "Grace", "Hopper", "3a"));
+        jdbcTemplate.update("UPDATE einwahl_entdeckerangebot SET auswahl = 'JA' WHERE teilnehmer_id = ? AND ag_titel = ?", ada.id(), angebotA.titel());
+        jdbcTemplate.update("UPDATE einwahl_entdeckerangebot SET auswahl = 'JA' WHERE teilnehmer_id = ? AND ag_titel = ?", grace.id(), angebotB.titel());
+
+        byte[] excel = exportController.entdeckerangebote().getBody();
+
+        assertNotNull(excel);
+        try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(excel))) {
+            var sheet = workbook.getSheet("Entdeckerangebote");
+            assertEquals("Forscher", sheet.getRow(0).getCell(0).getStringCellValue());
+            assertEquals("Kreativ", sheet.getRow(0).getCell(1).getStringCellValue());
+            assertEquals("Ada Lovelace (3a)", sheet.getRow(1).getCell(0).getStringCellValue());
+            assertEquals("Grace Hopper (3a)", sheet.getRow(1).getCell(1).getStringCellValue());
+        }
+        assertEquals("attachment; filename=\"entdeckerangebote.xlsx\"",
+                exportController.entdeckerangebote().getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
     }
 
     @Test

@@ -89,11 +89,56 @@ nachmittags_tage() {
   ' "$html_file"
 }
 
+nachmittag_ordinal_bis() {
+  local teilnehmer_index="$1"
+  local anzahl=0
+  local index
+
+  for ((index = 0; index <= teilnehmer_index; index++)); do
+    if ((index % 7 != 0)); then
+      anzahl=$((anzahl + 1))
+    fi
+  done
+  echo "$anzahl"
+}
+
+jahrgang12_ordinal_bis() {
+  local teilnehmer_index="$1"
+  local anzahl=0
+  local index
+  local ende=$teilnehmer_index
+
+  if ((ende > 45)); then
+    ende=45
+  fi
+  for ((index = 0; index <= ende; index++)); do
+    if ((index % 7 != 0)); then
+      anzahl=$((anzahl + 1))
+    fi
+  done
+  echo "$anzahl"
+}
+
+jahrgang34_ordinal_bis() {
+  local teilnehmer_index="$1"
+  local anzahl=0
+  local index
+
+  for ((index = 46; index <= teilnehmer_index; index++)); do
+    if ((index % 7 != 0)); then
+      anzahl=$((anzahl + 1))
+    fi
+  done
+  echo "$anzahl"
+}
+
 wahl_index_fuer_titel() {
   local teilnehmer_index="$1"
   local tag_index="$2"
   local anzahl="$3"
   local i
+  local ordinal
+  local ziel
   shift 3
   local -a titel=("$@")
 
@@ -102,69 +147,67 @@ wahl_index_fuer_titel() {
     return
   fi
 
-  for ((i = 0; i < anzahl; i++)); do
-    if [[ "${titel[$i]}" == "Entdecke die Welt des Programmierens" ]]; then
-      local idx=$((teilnehmer_index % 50))
-      if ((idx < 10)); then titel_index "Schwarzlicht-Theater" "${titel[@]}"; return; fi
-      if ((idx < 20)); then titel_index "Entdecke die Welt des Programmierens" "${titel[@]}"; return; fi
-      if ((idx < 34)); then titel_index "Theater" "${titel[@]}"; return; fi
-      titel_index "Fußball" "${titel[@]}"
+  # Dienstag: Naturfreunde wird dreifach belegt, Spielzeit Dienstag knapp ueberbelegt.
+  if titel_vorhanden "Naturfreunde" "${titel[@]}" && titel_vorhanden "Spielzeit Dienstag" "${titel[@]}"; then
+    ordinal="$(nachmittag_ordinal_bis "$teilnehmer_index")"
+    if ((ordinal <= 45)); then
+      titel_index "Naturfreunde" "${titel[@]}"
       return
     fi
-  done
-
-  for ((i = 0; i < anzahl; i++)); do
-    if [[ "${titel[$i]}" == "Töpfern" ]]; then
-      local idx=$((teilnehmer_index % 46))
-      if ((idx < 16)); then titel_index "Naturfreunde" "${titel[@]}"; return; fi
-      if ((idx < 28)); then titel_index "Stark & fair: ringen, raufen, Kräfte messen" "${titel[@]}"; return; fi
-      if ((idx < 37)); then titel_index "Töpfern" "${titel[@]}"; return; fi
+    if ((ordinal <= 66)); then
       titel_index "Spielzeit Dienstag" "${titel[@]}"
       return
     fi
-  done
+  fi
 
-  for ((i = 0; i < anzahl; i++)); do
-    if [[ "${titel[$i]}" == "Tischtennis" ]]; then
-      local idx=$((teilnehmer_index % 46))
-      if ((idx < 11)); then titel_index "Tischtennis" "${titel[@]}"; return; fi
-      if ((idx < 31)); then titel_index "Spielzeit Mittwoch" "${titel[@]}"; return; fi
-      if ((idx < 45)); then titel_index "Musikalischer Grundkurs" "${titel[@]}"; return; fi
+  # Mittwoch: Tischtennis wird dreifach belegt. Die restlichen Jahrgaenge werden
+  # kontrolliert auf die drei anderen Nachmittags-AGs verteilt.
+  if titel_vorhanden "Tischtennis" "${titel[@]}"; then
+    if ((teilnehmer_index <= 45)); then
+      ordinal="$(jahrgang12_ordinal_bis "$teilnehmer_index")"
+      if ((ordinal <= 30)); then
+        titel_index "Tischtennis" "${titel[@]}"
+        return
+      fi
+      titel_index "Spielzeit Mittwoch" "${titel[@]}"
+      return
+    fi
+  fi
+
+  if titel_vorhanden "Spielzeit Mittwoch" "${titel[@]}" && ((teilnehmer_index > 45)); then
+    ordinal="$(jahrgang34_ordinal_bis "$teilnehmer_index")"
+    if ((ordinal <= 20)); then
+      titel_index "Spielzeit Mittwoch" "${titel[@]}"
+    elif ((ordinal <= 34)); then
+      titel_index "Musikalischer Grundkurs" "${titel[@]}"
+    else
       titel_index "Trommeln" "${titel[@]}"
-      return
     fi
-  done
+    return
+  fi
 
-  for ((i = 0; i < anzahl; i++)); do
-    if [[ "${titel[$i]}" == "Textiles Gestalten" ]]; then
-      local idx=$((teilnehmer_index % 46))
-      if ((idx < 23)); then titel_index "Spielzeit Donnerstag" "${titel[@]}"; return; fi
-      if ((idx < 34)); then titel_index "Textiles Gestalten" "${titel[@]}"; return; fi
-      titel_index "Geräteturnen" "${titel[@]}"
+  # Donnerstag: Spielzeit Donnerstag wird mit 70 Kindern deutlich ueberbelegt.
+  if titel_vorhanden "Spielzeit Donnerstag" "${titel[@]}"; then
+    ordinal="$(nachmittag_ordinal_bis "$teilnehmer_index")"
+    if ((ordinal <= 70)); then
+      titel_index "Spielzeit Donnerstag" "${titel[@]}"
       return
     fi
-  done
+    if ((ordinal % 2 == 0)); then
+      ziel="Textiles Gestalten"
+    else
+      ziel="Geräteturnen"
+    fi
+    titel_index "$ziel" "${titel[@]}"
+    return
+  fi
 
-  # Fallback: wenige, bewusst knapp ueberbuchte AGs fuer ein realistisches Dashboard.
-  for ((i = 0; i < anzahl; i++)); do
-    if [[ "${titel[$i]}" == "Naturfreunde" && "$teilnehmer_index" -lt 16 ]]; then
-      echo "$i"
-      return
-    fi
-    if [[ "${titel[$i]}" == "Töpfern" && "$teilnehmer_index" -lt 10 ]]; then
-      echo "$i"
-      return
-    fi
-    if [[ "${titel[$i]}" == "Tischtennis" && "$teilnehmer_index" -lt 11 ]]; then
-      echo "$i"
-      return
-    fi
-  done
-
+  # Fallback fuer Montag, Freitag und die restlichen Dienstag-/Mittwoch-AGs.
+  # Die gezielt ueberbelegten AGs werden dabei nicht nochmals verwendet.
   local -a kandidaten=()
   for ((i = 0; i < anzahl; i++)); do
     case "${titel[$i]}" in
-      Naturfreunde|Töpfern|Tischtennis|Geräteturnen|Bewegungsyoga)
+      Naturfreunde|"Spielzeit Dienstag"|Tischtennis|"Spielzeit Donnerstag"|Bewegungsyoga)
         ;;
       *)
         kandidaten+=("$i")
@@ -195,10 +238,22 @@ titel_index() {
   echo 0
 }
 
+titel_vorhanden() {
+  local gesucht="$1"
+  shift
+  local titel
+
+  for titel in "$@"; do
+    if [[ "$titel" == "$gesucht" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 post_teilnehmer_einwahl() {
   local path="$1"
   local teilnehmer_index="$2"
-  local vollstaendig="$3"
   local html_file
   local feld
   local index
@@ -208,6 +263,7 @@ post_teilnehmer_einwahl() {
   local i
   local title
   local pair
+  local prioritaet
   local -a entdecker_felder
   local -a vormittag_felder
   local -a nachmittag_felder
@@ -237,32 +293,28 @@ post_teilnehmer_einwahl() {
     werte["$feld"]=""
   done
 
-  # Entdecker: vollstaendige Datensaetze beantworten alles, sonst bleibt ein Teil offen.
+  # Entdecker: alle Auswahlfelder werden ausgefuellt.
   index=0
   while IFS=$'\t' read -r field title; do
     [[ -z "$field" ]] && continue
-    if [[ "$vollstaendig" == "true" || $((index % 4)) -ne 0 ]]; then
-      if [[ "$title" == "Bewegungsyoga" ]]; then
-        werte["$field"]=$([[ "$teilnehmer_index" -lt 7 ]] && printf "JA" || printf "NEIN")
-      else
-        werte["$field"]=$([[ $(((teilnehmer_index + index) % 6)) -eq 0 ]] && printf "JA" || printf "NEIN")
-      fi
+    if [[ "$title" == "Bewegungsyoga" ]]; then
+      werte["$field"]=$([[ "$teilnehmer_index" -lt 7 ]] && printf "JA" || printf "NEIN")
+    else
+      werte["$field"]=$([[ $(((teilnehmer_index + index) % 6)) -eq 0 ]] && printf "JA" || printf "NEIN")
     fi
     index=$((index + 1))
   done < <(PREFIX="entdecker" felder_mit_titel "$html_file" "entdecker")
 
-  # Vormittag: Ja/Nein-Auswahl, offen bleibt nur ein Teil der unvollstaendigen Datensaetze.
+  # Vormittag: alle Ja/Nein-Auswahlen werden ausgefuellt.
   index=0
   while IFS=$'\t' read -r field title; do
     [[ -z "$field" ]] && continue
-    if [[ "$vollstaendig" == "true" || $((index % 3)) -ne 0 ]]; then
-      if [[ "$title" == "Chor" && "$teilnehmer_index" -lt 24 ]]; then
-        werte["$field"]="JA"
-      elif [[ "$title" == "Mini-Orchester" && $((teilnehmer_index % 5)) -eq 0 ]]; then
-        werte["$field"]="JA"
-      else
-        werte["$field"]="NEIN"
-      fi
+    if [[ "$title" == "Chor" && "$teilnehmer_index" -lt 24 ]]; then
+      werte["$field"]="JA"
+    elif [[ "$title" == "Mini-Orchester" && $((teilnehmer_index % 5)) -eq 0 ]]; then
+      werte["$field"]="JA"
+    else
+      werte["$field"]="NEIN"
     fi
     index=$((index + 1))
   done < <(PREFIX="vormittag" felder_mit_titel "$html_file" "vormittag")
@@ -282,9 +334,13 @@ post_teilnehmer_einwahl() {
     index="$(wahl_index_fuer_titel "$teilnehmer_index" "$tag_index" "${#tag_felder[@]}" "${tag_titel[@]}")"
     werte["${zuweisung_felder[$tag_index]}"]="${tag_felder[$index]#nachmittag_}"
 
+    prioritaet=2
     for ((i = 0; i < ${#tag_felder[@]}; i++)); do
-      if [[ "$vollstaendig" == "true" || $(((teilnehmer_index + i + tag_index) % 4)) -ne 0 ]]; then
-        werte["${tag_felder[$i]}"]="$((i + 1))"
+      if ((i == index)); then
+        werte["${tag_felder[$i]}"]="1"
+      else
+        werte["${tag_felder[$i]}"]="$prioritaet"
+        prioritaet=$((prioritaet + 1))
       fi
     done
     tag_index=$((tag_index + 1))
@@ -294,12 +350,20 @@ post_teilnehmer_einwahl() {
     [[ -z "$zeile" ]] && continue
     IFS=$'\t' read -ra gruppe <<< "$zeile"
     werte["${gruppe[0]}"]=""
+    local ja_feld=""
     for ((i = 1; i < ${#gruppe[@]}; i++)); do
       if [[ "${werte[${gruppe[$i]}]}" == "JA" ]]; then
-        werte["${gruppe[0]}"]="${gruppe[$i]##*_}"
+        ja_feld="${gruppe[$i]}"
         break
       fi
     done
+    if [[ -z "$ja_feld" && ${#gruppe[@]} -gt 1 ]]; then
+      ja_feld="${gruppe[1]}"
+      werte["$ja_feld"]="JA"
+    fi
+    if [[ -n "$ja_feld" ]]; then
+      werte["${gruppe[0]}"]="${ja_feld##*_}"
+    fi
   done
 
   args=(-sS -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}${path}")
@@ -320,7 +384,7 @@ post_teilnehmer_einwahl() {
 
   zuweisungs_gruppen_anzahl=$(( ${#zuweisung_felder[@]} + ${#entdecker_zuweisung_gruppen[@]} + ${#vormittag_zuweisung_gruppen[@]} ))
   gesamt_felder=$(( ${#entdecker_felder[@]} + ${#vormittag_felder[@]} + ${#nachmittag_felder[@]} + zuweisungs_gruppen_anzahl ))
-  printf "OK  %s (%s, %s von %s Feldern gesetzt)\n" "$path" "$([[ "$vollstaendig" == "true" ]] && printf "vollstaendig" || printf "offen")" "$gesetzt" "$gesamt_felder"
+  printf "OK  %s (vollstaendig, %s von %s Feldern gesetzt)\n" "$path" "$gesetzt" "$gesamt_felder"
 }
 
 printf "Importiere realistische Einwahl-Testdaten nach %s\n" "$BASE_URL"
@@ -331,14 +395,8 @@ if ((${#pfade[@]} == 0)); then
   exit 1
 fi
 
-vollstaendig_bis=$((${#pfade[@]} * 20 / 100))
-
 for ((i = 0; i < ${#pfade[@]}; i++)); do
-  if ((i < vollstaendig_bis)); then
-    post_teilnehmer_einwahl "${pfade[$i]}" "$i" "true"
-  else
-    post_teilnehmer_einwahl "${pfade[$i]}" "$i" "false"
-  fi
+  post_teilnehmer_einwahl "${pfade[$i]}" "$i"
 done
 
-printf "Einwahl-Testdaten importiert: %s von %s Teilnehmereinwahlen vollstaendig\n" "$vollstaendig_bis" "${#pfade[@]}"
+printf "Einwahl-Testdaten importiert: %s von %s Teilnehmereinwahlen vollstaendig\n" "${#pfade[@]}" "${#pfade[@]}"

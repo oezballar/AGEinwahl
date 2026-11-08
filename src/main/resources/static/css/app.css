@@ -280,7 +280,14 @@ th {
     box-shadow: 0 14px 34px rgba(27, 36, 48, 0.08);
     display: grid;
     gap: 18px;
+    min-width: 0;
     padding: 20px;
+}
+
+.dashboard-panel > *,
+.dashboard-panel .table-section {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .export-grid {
@@ -698,6 +705,48 @@ fieldset {
     color: var(--muted);
     padding: 28px;
     text-align: center;
+}
+
+.matrix-scroll {
+    overflow-x: auto;
+}
+
+.assignment-matrix {
+    min-width: max-content;
+}
+
+.assignment-matrix th:not(:first-child),
+.assignment-matrix td {
+    min-width: 108px;
+    text-align: center;
+}
+
+.assignment-matrix th:first-child {
+    background: #f1f5f9;
+    box-shadow: 2px 0 4px rgba(27, 36, 48, 0.08);
+    left: 0;
+    position: sticky;
+    z-index: 2;
+}
+
+.assignment-matrix th.overbooked-text,
+.assignment-matrix th.overbooked-text span {
+    color: var(--danger) !important;
+}
+
+.matrix-cell {
+    white-space: nowrap;
+}
+
+.matrix-priority {
+    font-weight: 800;
+    margin-right: 8px;
+}
+
+.matrix-assignment {
+    accent-color: var(--primary);
+    height: 16px;
+    width: 16px;
 }
 
 @media (max-width: 800px) {
