@@ -7,6 +7,7 @@ Fuer das Erstellen des Windows-Pakets wird ein **JDK 19** benoetigt. Eine reine 
 Der Laptop, auf dem die Anwendung spaeter genutzt wird, benoetigt danach keine Java-Installation mehr. Das JDK bringt die benoetigte Laufzeit in das Paket ein.
 
 Fuer den Export der personalisierten Rueckmeldezettel muss zusaetzlich **LibreOffice** installiert sein. Unter Windows wird dafuer `soffice.exe` verwendet. Eine Standardinstallation von LibreOffice wird automatisch gefunden.
+Die Rueckmeldezettel fuer Entdeckerangebote benoetigen ausserdem **Comic Sans MS (normal und fett)** auf dem Rechner, damit die Originalvorlage einschliesslich Schullogo und Schrift erhalten bleibt. Bei einer Ersatzschrift zeigt der Export einen Hinweis.
 
 ## Paket von Linux aus bauen
 
